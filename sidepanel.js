@@ -139,18 +139,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const updatedTerms = currentTerms.filter((_, index) => index !== termIndex);
         
         if (updatedTerms.length === 0) {
-            // No terms left, clear everything
-            clearSearch();
+            // No terms left, clear highlights but keep search text
+            try {
+                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                await chrome.tabs.sendMessage(tab.id, { action: 'clear' });
+                results.textContent = '';
+                updateSearchPreview(searchText.value, []);
+            } catch (error) {
+                console.error('Clear highlights error:', error);
+            }
             return;
         }
-        
-        // Update the search text to reflect removed terms
-        // Use space as separator since we split by all non-letter characters
-        const updatedSearchText = updatedTerms.join(' ');
-        searchText.value = updatedSearchText;
-        
-        // Save the updated search text
-        chrome.storage.local.set({ lastSearch: updatedSearchText });
         
         try {
             // Get the active tab
@@ -163,8 +162,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             if (response && response.totalCount !== undefined) {
-                // Update search preview with updated terms
-                updateSearchPreview(updatedSearchText, updatedTerms);
+                // Update search preview with updated terms (keep original search text)
+                updateSearchPreview(searchText.value, updatedTerms);
                 
                 // Display updated results
                 let resultsHTML = `<div><strong>Search terms (${updatedTerms.length}):</strong></div>`;
@@ -187,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </li>`;
                 });
                 resultsHTML += '</ul>';
-                resultsHTML += `<div><strong>Total matches: ${response.totalCount}</strong></div>`;
+                resultsHTML += `<div class="total-matches"><strong>Total matches: ${response.totalCount}</strong></div>`;
                 
                 results.innerHTML = resultsHTML;
                 
@@ -253,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </li>`;
                 });
                 resultsHTML += '</ul>';
-                resultsHTML += `<div><strong>Total matches: ${response.totalCount}</strong></div>`;
+                resultsHTML += `<div class="total-matches"><strong>Total matches: ${response.totalCount}</strong></div>`;
                 
                 results.innerHTML = resultsHTML;
                 

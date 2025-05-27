@@ -78,8 +78,8 @@ textarea {
     box-sizing: border-box;
     background-color: #fff;
     transition: all 0.2s ease;
-    min-height: 80px;
-    max-height: 200px;
+    min-height: 200px;
+    max-height: 2000px;
     resize: vertical;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.4;
@@ -154,47 +154,52 @@ button:active {
 }
 
 #results ul {
-    margin: 8px 0;
-    padding-left: 20px;
+    margin: 12px 0;
+    padding-left: 0;
+    list-style: none;
 }
 
 #results li {
-    margin: 4px 0;
-    font-family: 'Courier New', monospace;
-    background-color: #f8f9fa;
-    padding: 4px 8px;
-    border-radius: 4px;
-    border-left: 3px solid #4285f4;
+    margin: 12px 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 15px;
+    background-color: #ffffff;
+    padding: 16px 20px;
+    border-radius: 8px;
+    border: 2px solid #e8eaed;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     transition: all 0.2s ease;
     position: relative;
+    min-height: 60px;
 }
 
 /* Special styling for zero matches - make them stand out */
 #results li.zero-matches {
-    background-color: #ffebee;
-    border-left-color: #f44336;
-    color: #c62828;
+    background-color: #fff5f5;
+    border-color: #fecaca;
+    color: #dc2626;
     font-weight: 600;
 }
 
 #results li.zero-matches .color-indicator {
-    background-color: #f44336 !important;
-    border-color: #d32f2f;
+    background-color: #dc2626 !important;
+    border-color: #b91c1c;
 }
 
 #results li:hover {
-    background-color: #e3f2fd;
-    transform: translateX(2px);
-    box-shadow: 0 2px 8px rgba(66, 133, 244, 0.2);
-    border-left-width: 4px;
+    background-color: #f8faff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(66, 133, 244, 0.15);
+    border-color: #4285f4;
 }
 
 #results li.zero-matches:hover {
-    background-color: #ffcdd2;
-    box-shadow: 0 2px 8px rgba(244, 67, 54, 0.2);
+    background-color: #fef2f2;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+    border-color: #dc2626;
 }
 
 /* Remove the old hover text */
@@ -203,55 +208,56 @@ button:active {
 }
 
 #results li:active {
-    transform: translateX(1px) scale(0.98);
+    transform: translateY(-1px) scale(0.98);
 }
 
 #results li.zero-matches:active {
-    background-color: #ef9a9a;
+    background-color: #fee2e2;
 }
 
 /* Style for the remove button */
 .remove-btn {
-    background-color: #f44336;
+    background-color: #dc2626;
     color: white;
     border: none;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    font-size: 12px;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-left: auto;
     padding: 0;
-    min-width: 20px;
+    min-width: 28px;
     margin-right: 0;
     margin-bottom: 0;
     transition: all 0.2s ease;
     font-weight: bold;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .remove-btn:hover {
-    background-color: #d32f2f;
-    transform: scale(1.1);
-    box-shadow: 0 2px 4px rgba(244, 67, 54, 0.3);
+    background-color: #b91c1c;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
 }
 
 .remove-btn:active {
-    background-color: #c62828;
-    transform: scale(0.95);
+    background-color: #991b1b;
+    transform: translateY(0);
 }
 
 /* Style for the copy button */
 .copy-btn {
-    background-color: #4caf50;
+    background-color: #059669;
     color: white;
     border: none;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    font-size: 12px;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -260,19 +266,20 @@ button:active {
     margin-right: 0;
     margin-bottom: 0;
     padding: 0;
-    min-width: 20px;
+    min-width: 28px;
     transition: all 0.2s ease;
     font-weight: bold;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .copy-btn:hover {
-    background-color: #45a049;
+    background-color: #047857;
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
 }
 
 .copy-btn:active {
-    background-color: #3d8b40;
+    background-color: #065f46;
     transform: translateY(0);
 }
 
@@ -292,7 +299,7 @@ button:active {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 6px;
     margin-left: auto;
 }
 
@@ -300,8 +307,10 @@ button:active {
 .search-term-content {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     flex-grow: 1;
+    font-weight: 500;
+    color: #1f2937;
 }
 
 /* Add a copy all button in the header */
@@ -333,12 +342,13 @@ button:active {
 }
 
 #results .color-indicator {
-    width: 16px;
-    height: 16px;
-    border-radius: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
     display: inline-block;
-    border: 1px solid #ccc;
+    border: 2px solid rgba(0, 0, 0, 0.1);
     flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 #results .color-indicator-0 { background-color: #ff8c00; }
@@ -354,7 +364,25 @@ button:active {
 
 #results strong {
     color: #1a73e8;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.total-matches {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background-color: #f8faff;
+    border: 2px solid #e8eaed;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.total-matches strong {
+    color: #1565c0;
+    font-size: 15px;
+    margin-bottom: 0;
 }
 
 .search-preview {
