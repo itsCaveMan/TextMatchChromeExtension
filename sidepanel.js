@@ -68,7 +68,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const matches = [];
-        const regex = new RegExp(normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+        // Remove 'i' flag to make it case sensitive
+        const regex = new RegExp(normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
         let match;
 
         while ((match = regex.exec(normalizedTarget)) !== null) {
@@ -124,8 +125,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     normalizedPos++;
                 }
             } else {
-                // Regular character matching
-                if (originalChar.toLowerCase() === normalizedChar.toLowerCase()) {
+                // Regular character matching - make case sensitive
+                if (originalChar === normalizedChar) {
                     originalPos++;
                     normalizedPos++;
                 } else {
@@ -362,27 +363,231 @@ document.addEventListener('DOMContentLoaded', function() {
         searchPreview.innerHTML = highlightedText;
     }
 
-    async function sendHoverMessage(action, termIndex = null) {
+    // Fuzzy matching using Levenshtein distance
+    function levenshteinDistance(str1, str2) {
+        const m = str1.length;
+        const n = str2.length;
+        const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+
+        for (let i = 0; i <= m; i++) {
+            dp[i][0] = i;
+        }
+        for (let j = 0; j <= n; j++) {
+            dp[0][j] = j;
+        }
+
+        for (let i = 1; i <= m; i++) {
+            for (let j = 1; j <= n; j++) {
+                // Make case sensitive comparison
+                if (str1[i - 1] === str2[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1];
+                } else {
+                    dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+                }
+            }
+        }
+
+        return dp[m][n];
+    }
+
+    // Calculate similarity ratio (0 to 1)
+    function calculateSimilarity(str1, str2) {
+        const distance = levenshteinDistance(str1, str2);
+        const maxLength = Math.max(str1.length, str2.length);
+        return maxLength === 0 ? 1 : 1 - (distance / maxLength);
+    }
+
+    // Find the best fuzzy match in a text
+    function findBestFuzzyMatch(searchText, targetText, minSimilarity = 0.7) {
+        // Make case sensitive - remove toLowerCase()
+        const normalizedSearch = searchText.trim();
+        const normalizedTarget = targetText;
+        
+        if (!normalizedSearch || !normalizedTarget) {
+            return null;
+        }
+
+        let bestMatch = null;
+        let bestSimilarity = 0;
+        const searchLength = normalizedSearch.length;
+
+        // Sliding window approach - check all possible substrings
+        for (let i = 0; i <= normalizedTarget.length - searchLength * 0.5; i++) {
+            // Try different window sizes (from 50% to 150% of search text length)
+            for (let windowSize = Math.floor(searchLength * 0.5); windowSize <= Math.min(searchLength * 1.5, normalizedTarget.length - i); windowSize++) {
+                const substring = normalizedTarget.substring(i, i + windowSize);
+                const similarity = calculateSimilarity(normalizedSearch, substring);
+                
+                if (similarity > bestSimilarity && similarity >= minSimilarity) {
+                    bestSimilarity = similarity;
+                    bestMatch = {
+                        start: i,
+                        end: i + windowSize,
+                        text: targetText.substring(i, i + windowSize),
+                        similarity: similarity
+                    };
+                }
+            }
+        }
+
+        return bestMatch;
+    }
+
+    // Get text differences between two strings
+    function getTextDifferences(original, matched) {
+        const originalWords = original.trim().split(/\s+/);
+        const matchedWords = matched.trim().split(/\s+/);
+        
+        const differences = {
+            missing: [],
+            extra: [],
+            modified: []
+        };
+
+        // Simple word-based comparison - make case sensitive
+        const maxLen = Math.max(originalWords.length, matchedWords.length);
+        for (let i = 0; i < maxLen; i++) {
+            if (i >= originalWords.length) {
+                differences.extra.push(matchedWords[i]);
+            } else if (i >= matchedWords.length) {
+                differences.missing.push(originalWords[i]);
+            } else if (originalWords[i] !== matchedWords[i]) {
+                differences.modified.push({
+                    original: originalWords[i],
+                    matched: matchedWords[i]
+                });
+            }
+        }
+
+        return differences;
+    }
+
+    // Create visual diff highlighting character differences
+    function createVisualDiff(original, matched) {
+        // Make case sensitive - remove toLowerCase()
+        const originalChars = original;
+        const matchedChars = matched;
+        
+        // Use dynamic programming to find the longest common subsequence
+        const m = original.length;
+        const n = matched.length;
+        const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+        
+        // Fill the dp table
+        for (let i = 1; i <= m; i++) {
+            for (let j = 1; j <= n; j++) {
+                // Make case sensitive comparison
+                if (original[i - 1] === matched[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                } else {
+                    dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                }
+            }
+        }
+        
+        // Backtrack to find the diff
+        let i = m, j = n;
+        const originalDiff = [];
+        const matchedDiff = [];
+        
+        while (i > 0 || j > 0) {
+            if (i > 0 && j > 0 && original[i - 1] === matched[j - 1]) {
+                // Characters match
+                originalDiff.unshift({ char: original[i - 1], type: 'match' });
+                matchedDiff.unshift({ char: matched[j - 1], type: 'match' });
+                i--;
+                j--;
+            } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+                // Character only in matched (extra)
+                matchedDiff.unshift({ char: matched[j - 1], type: 'extra' });
+                j--;
+            } else {
+                // Character only in original (missing)
+                originalDiff.unshift({ char: original[i - 1], type: 'missing' });
+                i--;
+            }
+        }
+        
+        // Create HTML for visual diff
+        let originalHtml = '';
+        let matchedHtml = '';
+        
+        originalDiff.forEach(item => {
+            if (item.type === 'match') {
+                originalHtml += `<span class="diff-char-match">${escapeHtml(item.char)}</span>`;
+            } else if (item.type === 'missing') {
+                originalHtml += `<span class="diff-char-missing">${escapeHtml(item.char)}</span>`;
+            }
+        });
+        
+        matchedDiff.forEach(item => {
+            if (item.type === 'match') {
+                matchedHtml += `<span class="diff-char-match">${escapeHtml(item.char)}</span>`;
+            } else if (item.type === 'extra') {
+                matchedHtml += `<span class="diff-char-extra">${escapeHtml(item.char)}</span>`;
+            }
+        });
+        
+        return {
+            originalHtml: originalHtml,
+            matchedHtml: matchedHtml
+        };
+    }
+
+    // Escape HTML special characters
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Format differences for display
+    function formatDifferences(differences) {
+        let html = '<div class="differences">';
+        
+        if (differences.missing.length > 0) {
+            html += `<div class="diff-missing"><strong>Missing:</strong> ${differences.missing.join(', ')}</div>`;
+        }
+        
+        if (differences.extra.length > 0) {
+            html += `<div class="diff-extra"><strong>Extra:</strong> ${differences.extra.join(', ')}</div>`;
+        }
+        
+        if (differences.modified.length > 0) {
+            html += '<div class="diff-modified"><strong>Modified:</strong> ';
+            html += differences.modified.map(mod => `${mod.original} → ${mod.matched}`).join(', ');
+            html += '</div>';
+        }
+        
+        if (differences.missing.length === 0 && differences.extra.length === 0 && differences.modified.length === 0) {
+            html += '<div class="diff-perfect">Perfect match!</div>';
+        }
+        
+        html += '</div>';
+        return html;
+    }
+
+    async function sendHoverMessage(action, groupIndex = null) {
         try {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             await chrome.tabs.sendMessage(tab.id, {
                 action: action,
-                termIndex: termIndex
+                groupIndex: groupIndex
             });
         } catch (error) {
             console.error('Hover message error:', error);
         }
     }
 
-    function addHoverListeners(splitStrings) {
-        const listItems = results.querySelectorAll('li');
-        listItems.forEach((item, index) => {
+    function addHoverListeners(groups) {
+        const groupElements = results.querySelectorAll('.group-item');
+        groupElements.forEach((item, index) => {
             item.addEventListener('mouseenter', () => {
-                sendHoverMessage('hoverTerm', index);
+                sendHoverMessage('hoverGroup', index);
             });
             
             item.addEventListener('mouseleave', () => {
-                sendHoverMessage('unhoverTerm', index);
+                sendHoverMessage('unhoverGroup', index);
             });
             
             // Add event listeners for the buttons in this item
@@ -392,85 +597,124 @@ document.addEventListener('DOMContentLoaded', function() {
             if (removeBtn) {
                 removeBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    removeSearchTerm(index, splitStrings);
+                    removeGroup(index, groups);
                 });
             }
             
             if (copyBtn) {
                 copyBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const term = splitStrings[index];
-                    copySearchTerm(term, copyBtn);
+                    const group = groups[index];
+                    copyGroupText(group, copyBtn);
                 });
             }
         });
     }
 
-    async function removeSearchTerm(termIndex, currentTerms) {
-        // Remove the term at the specified index
-        const updatedTerms = currentTerms.filter((_, index) => index !== termIndex);
+    async function removeGroup(groupIndex, currentGroups) {
+        // Remove the group at the specified index
+        const updatedGroups = currentGroups.filter((_, index) => index !== groupIndex);
         
-        if (updatedTerms.length === 0) {
-            // No terms left, clear highlights but keep search text
+        if (updatedGroups.length === 0) {
+            // No groups left, clear highlights
             try {
                 const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
                 await chrome.tabs.sendMessage(tab.id, { action: 'clear' });
                 results.textContent = '';
-                updateSearchPreview(searchText.value, []);
             } catch (error) {
                 console.error('Clear highlights error:', error);
             }
             return;
         }
         
+        // Show loading state
+        showLoading();
+        
         try {
             // Get the active tab
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             
-            // Send message to content script with updated terms
+            // Send message to content script with updated groups
             const response = await chrome.tabs.sendMessage(tab.id, {
-                action: 'searchMultiple',
-                queries: updatedTerms
+                action: 'searchGroups',
+                groups: updatedGroups
             });
 
-            if (response && response.totalCount !== undefined) {
-                // Update search preview with updated terms (keep original search text)
-                updateSearchPreview(searchText.value, updatedTerms);
-                
-                // Display updated results
-                let resultsHTML = `<div><strong>Search terms (${updatedTerms.length}):</strong></div>`;
-                resultsHTML += '<ul>';
-                updatedTerms.forEach((term, index) => {
-                    const count = response.counts[index] || 0;
-                    const colorClass = `color-indicator-${index % 10}`;
-                    const isZeroMatch = count === 0;
-                    const listItemClass = isZeroMatch ? 'search-term-item zero-matches' : 'search-term-item';
-                    
-                    resultsHTML += `<li class="${listItemClass}" data-term-index="${index}">
-                        <div class="search-term-content">
-                            <span class="color-indicator ${colorClass}"></span>
-                            <span>${term} - ${count} matches</span>
-                        </div>
-                        <div class="result-buttons">
-                            <button class="copy-btn" title="Copy '${term}' to clipboard">📋</button>
-                            <button class="remove-btn" title="Remove '${term}' from search">×</button>
-                        </div>
-                    </li>`;
-                });
-                resultsHTML += '</ul>';
-                resultsHTML += `<div class="total-matches"><strong>Total matches: ${response.totalCount}</strong></div>`;
-                
-                results.innerHTML = resultsHTML;
-                
-                // Add hover listeners with updated terms
-                addHoverListeners(updatedTerms);
-            } else {
-                results.textContent = 'Search completed. Check page for highlights.';
+            if (response && response.results) {
+                displayResults(updatedGroups, response.results);
             }
         } catch (error) {
-            console.error('Remove term error:', error);
+            console.error('Remove group error:', error);
             results.textContent = 'Error updating search. Make sure you\'re on a valid webpage.';
         }
+    }
+
+    function displayResults(groups, searchResults) {
+        let resultsHTML = `<div class="groups-header"><strong>Groups (${groups.length}):</strong></div>`;
+        resultsHTML += '<div class="groups-container">';
+        
+        groups.forEach((group, index) => {
+            const result = searchResults[index];
+            const hasMatch = result && result.match;
+            const colorClass = `color-indicator-${index % 10}`;
+            const itemClass = hasMatch ? 'group-item has-match' : 'group-item no-match';
+            
+            resultsHTML += `<div class="${itemClass}" data-group-index="${index}">
+                <div class="group-header">
+                    <span class="color-indicator ${colorClass}"></span>
+                    <span class="group-number">Group ${index + 1}</span>
+                    <div class="group-buttons">
+                        <button class="copy-btn" title="Copy group text">📋</button>
+                        <button class="remove-btn" title="Remove group">×</button>
+                    </div>
+                </div>
+                <div class="group-content">
+                    <div class="original-text"><strong>Original:</strong> ${escapeHtml(group)}</div>`;
+            
+            if (hasMatch) {
+                resultsHTML += `<div class="matched-text"><strong>Matched:</strong> ${escapeHtml(result.match.text)}</div>
+                    <div class="similarity">Similarity: ${(result.match.similarity * 100).toFixed(1)}%</div>`;
+                
+                // Add visual diff
+                const visualDiff = createVisualDiff(group, result.match.text);
+                resultsHTML += `
+                    <div class="visual-diff">
+                        <div class="visual-diff-label">Visual Comparison:</div>
+                        <div style="margin-bottom: 8px;">
+                            <strong>Expected:</strong> ${visualDiff.originalHtml}
+                        </div>
+                        <div>
+                            <strong>Found:</strong> ${visualDiff.matchedHtml}
+                        </div>
+                    </div>`;
+                
+                const differences = getTextDifferences(group, result.match.text);
+                resultsHTML += formatDifferences(differences);
+            } else {
+                resultsHTML += '<div class="no-match-message">No match found on page</div>';
+            }
+            
+            resultsHTML += '</div></div>';
+        });
+        
+        resultsHTML += '</div>';
+        
+        const matchedCount = searchResults.filter(r => r && r.match).length;
+        resultsHTML += `<div class="summary"><strong>Matched: ${matchedCount} of ${groups.length} groups</strong></div>`;
+        
+        results.innerHTML = resultsHTML;
+        
+        // Add hover listeners
+        addHoverListeners(groups);
+    }
+
+    function showLoading() {
+        results.innerHTML = `
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Searching for matches...</div>
+            </div>
+        `;
     }
 
     async function performSearch() {
@@ -481,55 +725,31 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Split the input text by special characters
-        const splitStrings = splitTextBySpecialCharacters(query);
+        // Split by new lines to create groups
+        const groups = query.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
         
-        if (splitStrings.length === 0) {
-            results.textContent = 'No valid search terms found.';
+        if (groups.length === 0) {
+            results.textContent = 'No valid groups found.';
             return;
         }
+
+        // Show loading state
+        showLoading();
 
         try {
             // Get the active tab
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             
-            // Send message to content script with split strings
+            // Send message to content script with groups
             const response = await chrome.tabs.sendMessage(tab.id, {
-                action: 'searchMultiple',
-                queries: splitStrings
+                action: 'searchGroups',
+                groups: groups
             });
 
-            if (response && response.totalCount !== undefined) {
-                // Update search preview with highlights
-                updateSearchPreview(query, splitStrings);
-                
-                // Display split strings and total matches
-                let resultsHTML = `<div><strong>Search terms (${splitStrings.length}):</strong></div>`;
-                resultsHTML += '<ul>';
-                splitStrings.forEach((term, index) => {
-                    const count = response.counts[index] || 0;
-                    const colorClass = `color-indicator-${index % 10}`;
-                    const isZeroMatch = count === 0;
-                    const listItemClass = isZeroMatch ? 'search-term-item zero-matches' : 'search-term-item';
-                    
-                    resultsHTML += `<li class="${listItemClass}" data-term-index="${index}">
-                        <div class="search-term-content">
-                            <span class="color-indicator ${colorClass}"></span>
-                            <span>${term} - ${count} matches</span>
-                        </div>
-                        <div class="result-buttons">
-                            <button class="copy-btn" title="Copy '${term}' to clipboard">📋</button>
-                            <button class="remove-btn" title="Remove '${term}' from search">×</button>
-                        </div>
-                    </li>`;
-                });
-                resultsHTML += '</ul>';
-                resultsHTML += `<div class="total-matches"><strong>Total matches: ${response.totalCount}</strong></div>`;
-                
-                results.innerHTML = resultsHTML;
-                
-                // Add hover listeners after creating the HTML
-                addHoverListeners(splitStrings);
+            if (response && response.results) {
+                displayResults(groups, response.results);
             } else {
                 results.textContent = 'Search completed. Check page for highlights.';
             }
@@ -540,47 +760,69 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function clearSearch() {
-        searchText.value = '';
-        results.textContent = '';
-        searchPreview.innerHTML = '';
-        
         try {
-            // Get the active tab
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            
-            // Send clear message to content script
-            await chrome.tabs.sendMessage(tab.id, {
-                action: 'clear'
-            });
+            await chrome.tabs.sendMessage(tab.id, { action: 'clear' });
+            results.textContent = '';
+            searchText.value = '';
         } catch (error) {
             console.error('Clear error:', error);
         }
     }
 
     async function reloadExtension() {
+        // Store current search text
+        const currentSearchText = searchText.value;
+        if (currentSearchText) {
+            chrome.storage.local.set({ lastSearchText: currentSearchText });
+        }
+        
+        // Reload the extension
+        chrome.runtime.reload();
+    }
+
+    async function copyAllText() {
+        const text = searchText.value;
+        if (!text) {
+            showTemporaryMessage(copyAllBtn, 'Nothing to copy!');
+            return;
+        }
+        
         try {
-            results.textContent = 'Reloading extension...';
-            
-            // Use chrome.runtime.reload() which is the proper way to reload extensions
-            chrome.runtime.reload();
-            
-        } catch (error) {
-            console.error('Reload error:', error);
-            results.textContent = 'Error reloading extension. Try reloading manually from chrome://extensions/';
+            await navigator.clipboard.writeText(text);
+            showTemporaryMessage(copyAllBtn, 'Copied all!');
+        } catch (err) {
+            console.error('Failed to copy:', err);
+            showTemporaryMessage(copyAllBtn, 'Copy failed!');
         }
     }
 
-    // Load saved search text
-    chrome.storage.local.get(['lastSearch'], function(result) {
-        if (result.lastSearch) {
-            searchText.value = result.lastSearch;
+    async function copyGroupText(text, button) {
+        try {
+            await navigator.clipboard.writeText(text);
+            showTemporaryMessage(button, '✓');
+        } catch (err) {
+            console.error('Failed to copy:', err);
+            showTemporaryMessage(button, '✗');
         }
-    });
+    }
 
-    // Save search text when input changes (for sidebar persistence)
-    searchText.addEventListener('input', function() {
-        if (searchText.value.trim()) {
-            chrome.storage.local.set({ lastSearch: searchText.value });
+    function showTemporaryMessage(button, message) {
+        const originalText = button.textContent;
+        button.textContent = message;
+        button.disabled = true;
+        
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.disabled = false;
+        }, 1500);
+    }
+
+    // Restore last search text if available
+    chrome.storage.local.get(['lastSearchText'], function(result) {
+        if (result.lastSearchText) {
+            searchText.value = result.lastSearchText;
+            chrome.storage.local.remove('lastSearchText');
         }
     });
 
@@ -591,56 +833,4 @@ document.addEventListener('DOMContentLoaded', function() {
             results.textContent = '';
         });
     }
-
-    // Copy all text to clipboard
-    async function copyAllText() {
-        const text = searchText.value.trim();
-        if (!text) {
-            showTemporaryMessage(copyAllBtn, 'No text to copy');
-            return;
-        }
-
-        try {
-            await navigator.clipboard.writeText(text);
-            showTemporaryMessage(copyAllBtn, 'Copied!');
-        } catch (error) {
-            console.error('Copy failed:', error);
-            showTemporaryMessage(copyAllBtn, 'Copy failed');
-        }
-    }
-
-    // Copy individual search term to clipboard
-    async function copySearchTerm(term, button) {
-        try {
-            await navigator.clipboard.writeText(term);
-            button.classList.add('copied');
-            const originalText = button.textContent;
-            button.textContent = '✓';
-            
-            setTimeout(() => {
-                button.classList.remove('copied');
-                button.textContent = originalText;
-            }, 1000);
-        } catch (error) {
-            console.error('Copy failed:', error);
-            showTemporaryMessage(button, '❌');
-        }
-    }
-
-    // Show temporary message on button
-    function showTemporaryMessage(button, message) {
-        const originalText = button.textContent;
-        const originalClass = button.className;
-        
-        button.textContent = message;
-        button.className = originalClass + ' copied';
-        
-        setTimeout(() => {
-            button.textContent = originalText;
-            button.className = originalClass;
-        }, 1500);
-    }
-
-    // Initialize split characters on load
-    initializeSplitCharacters();
 }); 

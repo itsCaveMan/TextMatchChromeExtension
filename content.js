@@ -3,8 +3,8 @@ class TextMatcher {
     constructor() {
         this.highlightClass = 'text-matcher-highlight';
         this.currentHighlights = [];
-        this.highlightsByTerm = []; // Store highlights grouped by term index
-        this.lastSearchQueries = []; // Store the last search queries
+        this.highlightsByGroup = []; // Store highlights grouped by group index
+        this.lastSearchGroups = []; // Store the last search groups
         this.mutationObserver = null;
         this.addStyles();
         this.setupMutationObserver();
@@ -149,42 +149,105 @@ class TextMatcher {
         return `text-matcher-highlight-${index % 10}`;
     }
 
-    searchAndHighlightMultiple(queries) {
-        // Store queries for potential reapplication
-        this.lastSearchQueries = [...queries];
+    // Fuzzy matching using Levenshtein distance
+    levenshteinDistance(str1, str2) {
+        const m = str1.length;
+        const n = str2.length;
+        const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+
+        for (let i = 0; i <= m; i++) {
+            dp[i][0] = i;
+        }
+        for (let j = 0; j <= n; j++) {
+            dp[0][j] = j;
+        }
+
+        for (let i = 1; i <= m; i++) {
+            for (let j = 1; j <= n; j++) {
+                // Make case sensitive comparison
+                if (str1[i - 1] === str2[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1];
+                } else {
+                    dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+                }
+            }
+        }
+
+        return dp[m][n];
+    }
+
+    // Calculate similarity ratio (0 to 1)
+    calculateSimilarity(str1, str2) {
+        const distance = this.levenshteinDistance(str1, str2);
+        const maxLength = Math.max(str1.length, str2.length);
+        return maxLength === 0 ? 1 : 1 - (distance / maxLength);
+    }
+
+    // Find the best fuzzy match in a text node
+    findBestFuzzyMatch(searchText, targetText, minSimilarity = 0.7) {
+        // Make case sensitive - remove toLowerCase()
+        const normalizedSearch = searchText.trim();
+        const normalizedTarget = targetText;
+        
+        if (!normalizedSearch || !normalizedTarget) {
+            return null;
+        }
+
+        let bestMatch = null;
+        let bestSimilarity = 0;
+        const searchLength = normalizedSearch.length;
+
+        // Sliding window approach - check all possible substrings
+        for (let i = 0; i <= normalizedTarget.length - searchLength * 0.5; i++) {
+            // Try different window sizes (from 50% to 150% of search text length)
+            for (let windowSize = Math.floor(searchLength * 0.5); windowSize <= Math.min(searchLength * 1.5, normalizedTarget.length - i); windowSize++) {
+                const substring = normalizedTarget.substring(i, i + windowSize);
+                const similarity = this.calculateSimilarity(normalizedSearch, substring);
+                
+                if (similarity > bestSimilarity && similarity >= minSimilarity) {
+                    bestSimilarity = similarity;
+                    bestMatch = {
+                        start: i,
+                        end: i + windowSize,
+                        text: targetText.substring(i, i + windowSize),
+                        similarity: similarity
+                    };
+                }
+            }
+        }
+
+        return bestMatch;
+    }
+
+    searchAndHighlightGroups(groups) {
+        // Store groups for potential reapplication
+        this.lastSearchGroups = [...groups];
         
         // Clear previous highlights
         this.clearHighlights();
 
-        if (!queries || queries.length === 0) {
-            return { totalCount: 0, counts: [] };
+        if (!groups || groups.length === 0) {
+            return { results: [] };
         }
 
-        // For survey pages, also try a delayed search in case content loads later
-        if (window.location.href.includes('file://') && document.querySelector('.survey-page')) {
-            setTimeout(() => {
-                this.performActualSearch(queries);
-            }, 2000);
-        }
-
-        return this.performActualSearch(queries);
-    }
-
-    performActualSearch(queries) {
-        let totalCount = 0;
-        const counts = [];
-        let firstHighlight = null;
-
-        // Collect all text nodes first to avoid DOM mutations during iteration
+        // Collect all text nodes and build a text map
         const textNodes = [];
+        const textMap = [];
+        let totalLength = 0;
+        
         const collectTextNodes = (node) => {
             if (node.nodeType === Node.TEXT_NODE) {
-                // Only include text nodes with meaningful content
                 if (node.textContent.trim().length > 0) {
                     textNodes.push(node);
+                    textMap.push({
+                        node: node,
+                        start: totalLength,
+                        end: totalLength + node.textContent.length,
+                        text: node.textContent
+                    });
+                    totalLength += node.textContent.length;
                 }
             } else if (node.nodeType === Node.ELEMENT_NODE) {
-                // Skip script, style elements, and already highlighted content
                 if (node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE' && 
                     !node.classList.contains('text-matcher-highlight-0') &&
                     !node.classList.contains('text-matcher-highlight-1') &&
@@ -202,224 +265,98 @@ class TextMatcher {
         };
 
         collectTextNodes(document.body);
-
-        // Initialize counts array for all queries  
-        queries.forEach((_, index) => {
-            counts[index] = 0;
-        });
-
-        // Track which search terms have already been used (each search term can only highlight once)
-        const termHasHighlighted = new Array(queries.length).fill(false);
-
-        // Collect all possible matches across all text nodes first
-        const allMatches = [];
         
-        textNodes.forEach((textNode, nodeIndex) => {
-            if (!textNode.parentNode) return;
+        // Get all text content from the page
+        const pageText = textMap.map(tm => tm.text).join('');
+        
+        const results = groups.map((group, groupIndex) => {
+            // Find the best fuzzy match for this group
+            const match = this.findBestFuzzyMatch(group, pageText);
+            
+            if (match) {
+                // Store match info with group index
+                return {
+                    match: match,
+                    groupIndex: groupIndex
+                };
+            }
+            
+            return { match: null, groupIndex: groupIndex };
+        });
 
-            const text = textNode.textContent;
+        // Apply highlights for all matches
+        this.applyHighlights(results, textMap);
 
-            // Find all matches for all queries in this text node using normalized matching
-            queries.forEach((query, queryIndex) => {
-                if (!query.trim()) return;
+        return { results: results };
+    }
 
-                // Use normalized matching instead of exact matching
-                const matches = this.findNormalizedMatches(query, text, text);
-                
-                matches.forEach(match => {
-                    allMatches.push({
-                        start: match.start,
-                        end: match.end,
-                        text: match.text,
-                        queryIndex: queryIndex,
-                        highlightClass: this.getHighlightClass(queryIndex),
-                        textNode: textNode,
-                        nodeIndex: nodeIndex,
-                        absoluteStart: match.start, // position within this specific text node
-                        absoluteEnd: match.end
-                    });
+    applyHighlights(results, textMap) {
+        // Find which text nodes contain our matches
+        const nodeHighlights = new Map();
+        
+        results.forEach(result => {
+            if (result.match) {
+                // Find which text nodes this match spans
+                textMap.forEach(tm => {
+                    if (result.match.start < tm.end && result.match.end > tm.start) {
+                        // Calculate positions relative to this text node
+                        const relativeStart = Math.max(0, result.match.start - tm.start);
+                        const relativeEnd = Math.min(tm.text.length, result.match.end - tm.start);
+                        
+                        if (relativeStart < relativeEnd) {
+                            if (!nodeHighlights.has(tm.node)) {
+                                nodeHighlights.set(tm.node, []);
+                            }
+                            
+                            nodeHighlights.get(tm.node).push({
+                                start: relativeStart,
+                                end: relativeEnd,
+                                text: tm.text.substring(relativeStart, relativeEnd),
+                                groupIndex: result.groupIndex,
+                                highlightClass: this.getHighlightClass(result.groupIndex)
+                            });
+                        }
+                    }
                 });
-            });
-        });
-
-        // Sort all matches by query index first (search terms in order), then by node order, then by position
-        allMatches.sort((a, b) => {
-            if (a.queryIndex !== b.queryIndex) {
-                return a.queryIndex - b.queryIndex;
             }
-            if (a.nodeIndex !== b.nodeIndex) {
-                return a.nodeIndex - b.nodeIndex;
-            }
-            return a.start - b.start;
-        });
-
-        // Filter matches: each search term can only highlight once, and no position can be highlighted twice
-        const validMatches = [];
-        const globalHighlightedRanges = []; // Track all highlighted ranges across all nodes
-
-        allMatches.forEach(match => {
-            // Check if this search term has already highlighted something
-            if (termHasHighlighted[match.queryIndex]) {
-                return; // This search term already highlighted something
-            }
-
-            // Check if this position conflicts with any already highlighted range
-            const hasConflict = globalHighlightedRanges.some(range => 
-                range.textNode === match.textNode && 
-                (match.start < range.end && match.end > range.start)
-            );
-
-            if (!hasConflict) {
-                validMatches.push(match);
-                globalHighlightedRanges.push({
-                    textNode: match.textNode,
-                    start: match.start,
-                    end: match.end
-                });
-                termHasHighlighted[match.queryIndex] = true;
-                counts[match.queryIndex] = 1; // Each term can only highlight once
-            }
-        });
-
-        // Group valid matches by text node for processing
-        const matchesByNode = new Map();
-        validMatches.forEach(match => {
-            if (!matchesByNode.has(match.textNode)) {
-                matchesByNode.set(match.textNode, []);
-            }
-            matchesByNode.get(match.textNode).push(match);
         });
 
         // Apply highlights to each text node
-        matchesByNode.forEach((nodeMatches, textNode) => {
+        nodeHighlights.forEach((highlights, textNode) => {
             if (!textNode.parentNode) return;
 
-            // Sort matches by position within this text node
-            nodeMatches.sort((a, b) => a.start - b.start);
+            // Sort highlights by position within this text node
+            highlights.sort((a, b) => a.start - b.start);
 
             const text = textNode.textContent;
             let highlightedHTML = '';
             let lastEnd = 0;
 
-            nodeMatches.forEach(match => {
+            highlights.forEach(highlight => {
                 // Add text before the match
-                highlightedHTML += text.slice(lastEnd, match.start);
-                // Add highlighted match with actual term index stored as data attribute
-                highlightedHTML += `<span class="${match.highlightClass}" data-term-index="${match.queryIndex}">${match.text}</span>`;
-                lastEnd = match.end;
+                highlightedHTML += text.slice(lastEnd, highlight.start);
+                // Add highlighted match with group index stored as data attribute
+                highlightedHTML += `<span class="${highlight.highlightClass}" data-group-index="${highlight.groupIndex}">${highlight.text}</span>`;
+                lastEnd = highlight.end;
             });
 
             // Add remaining text after last match
             highlightedHTML += text.slice(lastEnd);
 
-            // Replace the text node with highlighted content if there were changes
-            if (highlightedHTML !== text) {
-                const wrapper = document.createElement('div');
-                wrapper.innerHTML = highlightedHTML;
-                
-                const parent = textNode.parentNode;
-                while (wrapper.firstChild) {
-                    const child = wrapper.firstChild;
-                    parent.insertBefore(child, textNode);
-                    if (child.classList && Array.from(child.classList).some(cls => cls.startsWith('text-matcher-highlight-'))) {
-                        // Add inline styles as backup in case CSS is overridden
-                        child.style.backgroundColor = '#ff8c00';
-                        child.style.color = 'white';
-                        child.style.padding = '2px 4px';
-                        child.style.borderRadius = '2px';
-                        child.style.position = 'relative';
-                        child.style.zIndex = '9999';
-                        child.style.display = 'inline';
-                        child.style.fontWeight = '500';
-                        
-                        this.currentHighlights.push(child);
-                        // Store the first highlight for scrolling
-                        if (!firstHighlight) {
-                            firstHighlight = child;
-                        }
-                    }
+            // Replace the text node with highlighted content
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = highlightedHTML;
+            
+            const parent = textNode.parentNode;
+            while (wrapper.firstChild) {
+                const child = wrapper.firstChild;
+                parent.insertBefore(child, textNode);
+                if (child.classList && Array.from(child.classList).some(cls => cls.startsWith('text-matcher-highlight-'))) {
+                    this.currentHighlights.push(child);
                 }
-                parent.removeChild(textNode);
             }
+            parent.removeChild(textNode);
         });
-
-        // Calculate total count
-        totalCount = counts.reduce((sum, count) => sum + count, 0);
-
-        // Scroll to first highlight if any found
-        if (firstHighlight) {
-            firstHighlight.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-            });
-        }
-
-        return { totalCount, counts };
-    }
-
-    searchAndHighlight(query) {
-        // Clear previous highlights
-        this.clearHighlights();
-
-        if (!query.trim()) {
-            return { count: 0 };
-        }
-
-        let count = 0;
-
-        // Function to walk through text nodes
-        const walkTextNodes = (node) => {
-            if (node.nodeType === Node.TEXT_NODE) {
-                const text = node.textContent;
-                
-                // Use normalized matching instead of exact regex matching
-                const matches = this.findNormalizedMatches(query, text, text);
-                
-                if (matches.length > 0) {
-                    // Build highlighted HTML
-                    let highlightedHTML = '';
-                    let lastEnd = 0;
-                    
-                    matches.forEach(match => {
-                        // Add text before the match
-                        highlightedHTML += text.slice(lastEnd, match.start);
-                        // Add highlighted match
-                        highlightedHTML += `<span class="${this.highlightClass}">${match.text}</span>`;
-                        lastEnd = match.end;
-                        count++;
-                    });
-                    
-                    // Add remaining text after last match
-                    highlightedHTML += text.slice(lastEnd);
-                    
-                    if (highlightedHTML !== text) {
-                        const wrapper = document.createElement('div');
-                        wrapper.innerHTML = highlightedHTML;
-                        
-                        // Replace the text node with highlighted content
-                        const parent = node.parentNode;
-                        while (wrapper.firstChild) {
-                            const child = wrapper.firstChild;
-                            parent.insertBefore(child, node);
-                            if (child.classList && child.classList.contains(this.highlightClass)) {
-                                this.currentHighlights.push(child);
-                            }
-                        }
-                        parent.removeChild(node);
-                    }
-                }
-            } else if (node.nodeType === Node.ELEMENT_NODE) {
-                // Skip script and style elements
-                if (node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE') {
-                    // Create a copy of child nodes to iterate over
-                    const children = Array.from(node.childNodes);
-                    children.forEach(child => walkTextNodes(child));
-                }
-            }
-        };
-
-        // Start the search from the document body
-        walkTextNodes(document.body);
 
         // Scroll to first highlight if any found
         if (this.currentHighlights.length > 0) {
@@ -428,8 +365,6 @@ class TextMatcher {
                 block: 'center'
             });
         }
-
-        return { count };
     }
 
     clearHighlights() {
@@ -441,21 +376,19 @@ class TextMatcher {
             }
         });
         this.currentHighlights = [];
-        this.highlightsByTerm = [];
+        this.highlightsByGroup = [];
     }
 
-    // New method to handle hover effects
-    applyHoverEffect(termIndex) {
+    // Handle hover effects for groups
+    applyHoverEffect(groupIndex) {
         // Remove existing hover effects
         this.removeHoverEffect();
         
-        // Apply hover effect to the specified term's highlights
-        // Since each search term now only highlights once, we need to find the highlight
-        // that corresponds to the actual termIndex, not the CSS class index
+        // Apply hover effect to the specified group's highlights
         this.currentHighlights.forEach((highlight) => {
-            const actualTermIndex = this.getActualTermIndexFromHighlight(highlight);
+            const actualGroupIndex = parseInt(highlight.getAttribute('data-group-index') || '-1');
             
-            if (actualTermIndex === termIndex) {
+            if (actualGroupIndex === groupIndex) {
                 highlight.classList.add('text-matcher-hover-effect');
             } else {
                 highlight.classList.add('text-matcher-dimmed');
@@ -468,23 +401,6 @@ class TextMatcher {
             highlight.classList.remove('text-matcher-hover-effect');
             highlight.classList.remove('text-matcher-dimmed');
         });
-    }
-
-    getActualTermIndexFromHighlight(highlight) {
-        // Get the actual term index stored as a data attribute
-        // We'll need to store this when creating highlights
-        const termIndex = highlight.getAttribute('data-term-index');
-        return termIndex !== null ? parseInt(termIndex) : -1;
-    }
-
-    getTermIndexFromHighlight(highlight) {
-        // Extract term index from the highlight class name (for backward compatibility)
-        const classList = Array.from(highlight.classList);
-        const termClass = classList.find(cls => cls.startsWith('text-matcher-highlight-'));
-        if (termClass) {
-            return parseInt(termClass.split('-').pop());
-        }
-        return -1;
     }
 
     setupMutationObserver() {
@@ -506,11 +422,12 @@ class TextMatcher {
                 }
             });
             
-            // Reapply highlights if they were removed and we have stored queries
-            if (shouldReapplyHighlights && this.lastSearchQueries.length > 0) {
+            // Reapply highlights if they were removed and we have stored groups
+            if (shouldReapplyHighlights && this.lastSearchGroups.length > 0) {
+                // Use a timeout to avoid interfering with the DOM mutation
                 setTimeout(() => {
-                    this.searchAndHighlightMultiple(this.lastSearchQueries);
-                }, 100); // Small delay to let DOM settle
+                    this.searchAndHighlightGroups(this.lastSearchGroups);
+                }, 100);
             }
         });
         
@@ -520,133 +437,27 @@ class TextMatcher {
             subtree: true
         });
     }
-
-    // Normalize whitespace for better matching
-    normalizeWhitespace(text) {
-        return text
-            .replace(/\s+/g, ' ')  // Replace multiple whitespace chars with single space
-            .trim();               // Remove leading/trailing whitespace
-    }
-
-    // Find matches in text with whitespace normalization
-    findNormalizedMatches(searchText, targetText, originalText) {
-        const normalizedSearch = this.normalizeWhitespace(searchText);
-        const normalizedTarget = this.normalizeWhitespace(targetText);
-        
-        if (!normalizedSearch || !normalizedTarget) {
-            return [];
-        }
-
-        const matches = [];
-        const regex = new RegExp(normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-        let match;
-
-        while ((match = regex.exec(normalizedTarget)) !== null) {
-            // Now we need to map the normalized position back to the original text position
-            const originalMatch = this.mapNormalizedToOriginal(
-                match.index, 
-                match.index + match[0].length, 
-                originalText, 
-                normalizedTarget
-            );
-            
-            if (originalMatch) {
-                matches.push({
-                    start: originalMatch.start,
-                    end: originalMatch.end,
-                    text: originalText.slice(originalMatch.start, originalMatch.end)
-                });
-            }
-            
-            // Prevent infinite loop for zero-length matches
-            if (match.index === regex.lastIndex) {
-                regex.lastIndex++;
-            }
-        }
-
-        return matches;
-    }
-
-    // Map positions from normalized text back to original text
-    mapNormalizedToOriginal(normalizedStart, normalizedEnd, originalText, normalizedText) {
-        let originalPos = 0;
-        let normalizedPos = 0;
-        let matchStart = -1;
-        let matchEnd = -1;
-
-        while (originalPos < originalText.length && normalizedPos < normalizedText.length) {
-            const originalChar = originalText[originalPos];
-            const normalizedChar = normalizedText[normalizedPos];
-
-            // Mark the start position when we reach the normalized start
-            if (normalizedPos === normalizedStart && matchStart === -1) {
-                matchStart = originalPos;
-            }
-
-            // If we're in whitespace in the original text
-            if (/\s/.test(originalChar)) {
-                // Skip consecutive whitespace in original
-                while (originalPos < originalText.length && /\s/.test(originalText[originalPos])) {
-                    originalPos++;
-                }
-                // Move one position in normalized (which has single spaces)
-                if (normalizedPos < normalizedText.length && normalizedChar === ' ') {
-                    normalizedPos++;
-                }
-            } else {
-                // Regular character matching
-                if (originalChar.toLowerCase() === normalizedChar.toLowerCase()) {
-                    originalPos++;
-                    normalizedPos++;
-                } else {
-                    // Mismatch - this shouldn't happen with proper normalization
-                    return null;
-                }
-            }
-
-            // Mark the end position when we reach the normalized end
-            if (normalizedPos === normalizedEnd && matchEnd === -1) {
-                matchEnd = originalPos;
-                break;
-            }
-        }
-
-        // Handle case where match ends at the very end
-        if (normalizedPos === normalizedEnd && matchEnd === -1) {
-            matchEnd = originalPos;
-        }
-
-        if (matchStart !== -1 && matchEnd !== -1 && matchStart < matchEnd) {
-            return { start: matchStart, end: matchEnd };
-        }
-
-        return null;
-    }
 }
 
-// Initialize the text matcher
+// Initialize the TextMatcher
 const textMatcher = new TextMatcher();
 
-// Listen for messages from popup
+// Listen for messages from popup/sidebar
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'search') {
-        const result = textMatcher.searchAndHighlight(request.query);
-        sendResponse(result);
-    } else if (request.action === 'searchMultiple') {
-        const result = textMatcher.searchAndHighlightMultiple(request.queries);
+    if (request.action === 'searchGroups') {
+        const result = textMatcher.searchAndHighlightGroups(request.groups);
         sendResponse(result);
     } else if (request.action === 'clear') {
         textMatcher.clearHighlights();
         sendResponse({ success: true });
-    } else if (request.action === 'hoverTerm') {
-        textMatcher.applyHoverEffect(request.termIndex);
+    } else if (request.action === 'hoverGroup') {
+        textMatcher.applyHoverEffect(request.groupIndex);
         sendResponse({ success: true });
-    } else if (request.action === 'unhoverTerm') {
+    } else if (request.action === 'unhoverGroup') {
         textMatcher.removeHoverEffect();
         sendResponse({ success: true });
     }
-    
-    return true; // Keep the message channel open for async response
+    return true; // Indicate that the response is asynchronous
 });
 
 // Log that content script is loaded
