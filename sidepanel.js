@@ -6,12 +6,159 @@ document.addEventListener('DOMContentLoaded', function() {
     const reloadBtn = document.getElementById('reloadBtn');
     const results = document.getElementById('results');
     const searchPreview = document.getElementById('searchPreview');
+    const splitCharTags = document.getElementById('splitCharTags');
+    const newCharInput = document.getElementById('newCharInput');
+    const addCharBtn = document.getElementById('addCharBtn');
+
+    // Default split characters with their display names
+    const defaultSplitChars = [
+        { char: '\n', display: '↵', name: 'New Line', active: true },
+        { char: '\r', display: '↵', name: 'Carriage Return', active: true },
+        { char: ' ', display: '␣', name: 'Space', active: false },
+        { char: '\t', display: '⇥', name: 'Tab', active: false },
+        { char: '!', display: '!', name: 'Exclamation', active: true },
+        { char: '"', display: '"', name: 'Quote', active: true },
+        { char: '#', display: '#', name: 'Hash', active: true },
+        { char: '$', display: '$', name: 'Dollar', active: true },
+        { char: '%', display: '%', name: 'Percent', active: true },
+        { char: '&', display: '&', name: 'Ampersand', active: true },
+        { char: '(', display: '(', name: 'Left Paren', active: true },
+        { char: ')', display: ')', name: 'Right Paren', active: true },
+        { char: '*', display: '*', name: 'Asterisk', active: true },
+        { char: '+', display: '+', name: 'Plus', active: true },
+        { char: ',', display: ',', name: 'Comma', active: false },
+        { char: '-', display: '-', name: 'Dash', active: true },
+        { char: '.', display: '.', name: 'Period', active: false },
+        { char: '/', display: '/', name: 'Slash', active: true },
+        { char: ':', display: ':', name: 'Colon', active: true },
+        { char: ';', display: ';', name: 'Semicolon', active: true },
+        { char: '<', display: '<', name: 'Less Than', active: true },
+        { char: '=', display: '=', name: 'Equals', active: true },
+        { char: '>', display: '>', name: 'Greater Than', active: true },
+        { char: '?', display: '?', name: 'Question', active: true },
+        { char: '@', display: '@', name: 'At Sign', active: true },
+        { char: '[', display: '[', name: 'Left Bracket', active: true },
+        { char: '\\', display: '\\', name: 'Backslash', active: true },
+        { char: ']', display: ']', name: 'Right Bracket', active: true },
+        { char: '^', display: '^', name: 'Caret', active: true },
+        { char: '_', display: '_', name: 'Underscore', active: true },
+        { char: '`', display: '`', name: 'Backtick', active: true },
+        { char: '{', display: '{', name: 'Left Brace', active: true },
+        { char: '|', display: '|', name: 'Pipe', active: true },
+        { char: '}', display: '}', name: 'Right Brace', active: true },
+        { char: '~', display: '~', name: 'Tilde', active: true }
+    ];
+
+    let splitCharacters = [];
+
+    // Normalize whitespace for better matching (same as content script)
+    function normalizeWhitespace(text) {
+        return text
+            .replace(/\s+/g, ' ')  // Replace multiple whitespace chars with single space
+            .trim();               // Remove leading/trailing whitespace
+    }
+
+    // Find matches in text with whitespace normalization (same as content script)
+    function findNormalizedMatches(searchText, targetText, originalText) {
+        const normalizedSearch = normalizeWhitespace(searchText);
+        const normalizedTarget = normalizeWhitespace(targetText);
+        
+        if (!normalizedSearch || !normalizedTarget) {
+            return [];
+        }
+
+        const matches = [];
+        const regex = new RegExp(normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+        let match;
+
+        while ((match = regex.exec(normalizedTarget)) !== null) {
+            // Now we need to map the normalized position back to the original text position
+            const originalMatch = mapNormalizedToOriginal(
+                match.index, 
+                match.index + match[0].length, 
+                originalText, 
+                normalizedTarget
+            );
+            
+            if (originalMatch) {
+                matches.push({
+                    start: originalMatch.start,
+                    end: originalMatch.end,
+                    text: originalText.slice(originalMatch.start, originalMatch.end)
+                });
+            }
+            
+            // Prevent infinite loop for zero-length matches
+            if (match.index === regex.lastIndex) {
+                regex.lastIndex++;
+            }
+        }
+
+        return matches;
+    }
+
+    // Map positions from normalized text back to original text (same as content script)
+    function mapNormalizedToOriginal(normalizedStart, normalizedEnd, originalText, normalizedText) {
+        let originalPos = 0;
+        let normalizedPos = 0;
+        let matchStart = -1;
+        let matchEnd = -1;
+
+        while (originalPos < originalText.length && normalizedPos < normalizedText.length) {
+            const originalChar = originalText[originalPos];
+            const normalizedChar = normalizedText[normalizedPos];
+
+            // Mark the start position when we reach the normalized start
+            if (normalizedPos === normalizedStart && matchStart === -1) {
+                matchStart = originalPos;
+            }
+
+            // If we're in whitespace in the original text
+            if (/\s/.test(originalChar)) {
+                // Skip consecutive whitespace in original
+                while (originalPos < originalText.length && /\s/.test(originalText[originalPos])) {
+                    originalPos++;
+                }
+                // Move one position in normalized (which has single spaces)
+                if (normalizedPos < normalizedText.length && normalizedChar === ' ') {
+                    normalizedPos++;
+                }
+            } else {
+                // Regular character matching
+                if (originalChar.toLowerCase() === normalizedChar.toLowerCase()) {
+                    originalPos++;
+                    normalizedPos++;
+                } else {
+                    // Mismatch - this shouldn't happen with proper normalization
+                    return null;
+                }
+            }
+
+            // Mark the end position when we reach the normalized end
+            if (normalizedPos === normalizedEnd && matchEnd === -1) {
+                matchEnd = originalPos;
+                break;
+            }
+        }
+
+        // Handle case where match ends at the very end
+        if (normalizedPos === normalizedEnd && matchEnd === -1) {
+            matchEnd = originalPos;
+        }
+
+        if (matchStart !== -1 && matchEnd !== -1 && matchStart < matchEnd) {
+            return { start: matchStart, end: matchEnd };
+        }
+
+        return null;
+    }
 
     // Event listeners
     searchBtn.addEventListener('click', performSearch);
     clearBtn.addEventListener('click', clearSearch);
     copyAllBtn.addEventListener('click', copyAllText);
     reloadBtn.addEventListener('click', reloadExtension);
+    addCharBtn.addEventListener('click', addNewSplitChar);
     
     // Allow Ctrl+Enter to trigger search (Enter alone creates new lines)
     searchText.addEventListener('keydown', function(e) {
@@ -21,10 +168,140 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Allow Enter to add new split character
+    newCharInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addNewSplitChar();
+        }
+    });
+
+    // Update add button state based on input
+    newCharInput.addEventListener('input', function() {
+        const value = newCharInput.value.trim();
+        addCharBtn.disabled = !value || splitCharacters.some(sc => sc.char === value);
+    });
+
+    function initializeSplitCharacters() {
+        // Load saved split characters or use defaults
+        chrome.storage.local.get(['splitCharacters'], function(result) {
+            if (result.splitCharacters && Array.isArray(result.splitCharacters)) {
+                splitCharacters = result.splitCharacters;
+            } else {
+                splitCharacters = [...defaultSplitChars];
+                saveSplitCharacters();
+            }
+            renderSplitCharTags();
+        });
+    }
+
+    function saveSplitCharacters() {
+        chrome.storage.local.set({ splitCharacters: splitCharacters });
+    }
+
+    function renderSplitCharTags() {
+        splitCharTags.innerHTML = '';
+        
+        splitCharacters.forEach((splitChar, index) => {
+            const tag = document.createElement('div');
+            tag.className = `split-char-tag ${splitChar.active ? 'active' : ''}`;
+            tag.title = `${splitChar.name} - Click to toggle`;
+            
+            const charDisplay = document.createElement('span');
+            charDisplay.className = 'char-display';
+            
+            // Handle special invisible characters
+            if (splitChar.char === '\n' || splitChar.char === '\r') {
+                charDisplay.innerHTML = `<span class="invisible-char">${splitChar.display}</span>`;
+            } else if (splitChar.char === ' ') {
+                charDisplay.innerHTML = `<span class="invisible-char">${splitChar.display}</span>`;
+            } else if (splitChar.char === '\t') {
+                charDisplay.innerHTML = `<span class="invisible-char">${splitChar.display}</span>`;
+            } else {
+                charDisplay.textContent = splitChar.display;
+            }
+            
+            const removeBtn = document.createElement('span');
+            removeBtn.className = 'remove-char';
+            removeBtn.textContent = '×';
+            removeBtn.title = `Remove ${splitChar.name}`;
+            
+            tag.appendChild(charDisplay);
+            
+            // Only show remove button for custom characters (not defaults)
+            const isCustomChar = !defaultSplitChars.some(dc => dc.char === splitChar.char);
+            if (isCustomChar) {
+                tag.appendChild(removeBtn);
+            }
+            
+            // Toggle active state
+            tag.addEventListener('click', function(e) {
+                if (e.target === removeBtn) return; // Don't toggle when removing
+                splitCharacters[index].active = !splitCharacters[index].active;
+                saveSplitCharacters();
+                renderSplitCharTags();
+            });
+            
+            // Remove character
+            if (isCustomChar) {
+                removeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    splitCharacters.splice(index, 1);
+                    saveSplitCharacters();
+                    renderSplitCharTags();
+                });
+            }
+            
+            splitCharTags.appendChild(tag);
+        });
+    }
+
+    function addNewSplitChar() {
+        const newChar = newCharInput.value.trim();
+        if (!newChar) return;
+        
+        // Check if character already exists
+        if (splitCharacters.some(sc => sc.char === newChar)) {
+            newCharInput.value = '';
+            return;
+        }
+        
+        // Add new character
+        const newSplitChar = {
+            char: newChar,
+            display: newChar,
+            name: `Custom: ${newChar}`,
+            active: true
+        };
+        
+        splitCharacters.push(newSplitChar);
+        saveSplitCharacters();
+        renderSplitCharTags();
+        newCharInput.value = '';
+        addCharBtn.disabled = true;
+    }
+
+    function getActiveSplitCharacters() {
+        return splitCharacters
+            .filter(sc => sc.active)
+            .map(sc => sc.char);
+    }
+
     function splitTextBySpecialCharacters(text) {
-        // Split by line breaks and specified special characters only
-        // Keep whole sentences intact by not splitting on regular spaces
-        const specialChars = /[!"#$%&()*+\-/:;<=>?@[\\\]^_`{|}~±÷×√∞≈≠≤≥∑∏∫∧∨¬⊂⊃∈∉∅$€£¥₩₹₽→←↑↓↔⇐⇒⇔↦\r\n]+/g;
+        const activeChars = getActiveSplitCharacters();
+        
+        if (activeChars.length === 0) {
+            // If no split characters are active, return the whole text as one term
+            return [text.trim()].filter(str => str.length > 0);
+        }
+        
+        // Create regex pattern from active characters
+        const escapedChars = activeChars.map(char => {
+            // Escape special regex characters
+            return char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        });
+        
+        const specialChars = new RegExp(`[${escapedChars.join('')}]+`, 'g');
         return text.split(specialChars)
                   .map(str => str.trim())
                   .filter(str => str.length > 0); // Remove empty strings
@@ -45,23 +322,18 @@ document.addEventListener('DOMContentLoaded', function() {
             searchTerms.forEach((term, index) => {
                 if (!term.trim()) return;
                 
-                const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-                let match;
+                // Use normalized matching instead of exact regex matching
+                const matches = findNormalizedMatches(term, originalText, originalText);
                 
-                while ((match = regex.exec(originalText)) !== null) {
+                matches.forEach(match => {
                     termPositions.push({
-                        start: match.index,
-                        end: match.index + match[0].length,
-                        term: match[0],
+                        start: match.start,
+                        end: match.end,
+                        term: match.text,
                         index: index,
                         className: `preview-highlight-${index % 10}`
                     });
-                    
-                    // Prevent infinite loop for zero-length matches
-                    if (match.index === regex.lastIndex) {
-                        regex.lastIndex++;
-                    }
-                }
+                });
             });
             
             // Sort by position and remove overlaps (keep first occurrence)
@@ -368,4 +640,7 @@ document.addEventListener('DOMContentLoaded', function() {
             button.className = originalClass;
         }, 1500);
     }
+
+    // Initialize split characters on load
+    initializeSplitCharacters();
 }); 

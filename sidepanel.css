@@ -337,8 +337,8 @@ button:active {
 }
 
 .copy-all-btn:active {
-    background-color: #ef6c00;
-    transform: translateY(0);
+    background-color: #d4851d;
+    transform: translateY(1px);
 }
 
 #results .color-indicator {
@@ -497,11 +497,181 @@ button:active {
 }
 
 .highlight {
-    background-color: #fff3cd;
-    color: #856404;
+    background-color: #ffeb3b;
+    color: #000;
     padding: 2px 4px;
     border-radius: 3px;
-    border: 1px solid #ffeaa7;
+    font-weight: bold;
+}
+
+/* Split Character Tags Styles */
+.split-chars-container {
+    background-color: #fff;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 8px;
+}
+
+.split-char-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+    min-height: 50px;
+    align-items: flex-start;
+    align-content: flex-start;
+}
+
+.split-char-tags:empty::before {
+    content: "No split characters selected. Add some below or use defaults.";
+    color: #9aa0a6;
+    font-style: italic;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    height: 50px;
+}
+
+.split-char-tag {
+    display: inline-flex;
+    align-items: center;
+    background-color: #f8f9fa;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #5f6368;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    gap: 8px;
+    min-height: 36px;
+    box-sizing: border-box;
+}
+
+.split-char-tag:hover {
+    border-color: #4285f4;
+    background-color: #f1f3f4;
+    transform: none;
+    box-shadow: none;
+}
+
+.split-char-tag.active {
+    background-color: #4285f4;
+    border-color: #4285f4;
+    color: white;
+}
+
+.split-char-tag.active:hover {
+    background-color: #3367d6;
+    border-color: #3367d6;
+}
+
+.split-char-tag .char-display {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    background-color: rgba(0, 0, 0, 0.08);
+    padding: 4px 6px;
+    border-radius: 4px;
+    min-width: 20px;
+    text-align: center;
+    font-size: 13px;
+    line-height: 1;
+}
+
+.split-char-tag.active .char-display {
+    background-color: rgba(255, 255, 255, 0.25);
+    color: white;
+}
+
+.split-char-tag .remove-char {
+    margin-left: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 16px;
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+    line-height: 1;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.split-char-tag .remove-char:hover {
+    opacity: 1;
+    color: #ea4335;
+}
+
+.split-char-tag.active .remove-char:hover {
+    color: #ffcdd2;
+}
+
+.add-char-section {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid #e8eaed;
+}
+
+#newCharInput {
+    flex: 1;
+    padding: 10px 12px;
+    border: 2px solid #e1e5e9;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    background-color: #fff;
+    transition: all 0.15s ease;
+    min-width: 0;
+    color: #3c4043;
+}
+
+#newCharInput:focus {
+    outline: none;
+    border-color: #4285f4;
+    box-shadow: none;
+}
+
+#newCharInput:hover {
+    border-color: #bdc1c6;
+}
+
+.add-char-btn {
+    background-color: #34a853;
+    padding: 10px 16px;
+    font-size: 14px;
+    min-width: auto;
+    margin: 0;
+    white-space: nowrap;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.add-char-btn:hover {
+    background-color: #2d8f47;
+}
+
+.add-char-btn:active {
+    background-color: #258142;
+}
+
+.add-char-btn:disabled {
+    background-color: #dadce0;
+    color: #9aa0a6;
+    cursor: not-allowed;
+}
+
+/* Special character display helpers */
+.char-display .invisible-char {
+    color: inherit;
+    font-style: normal;
+    font-size: 12px;
+    opacity: 0.8;
 }
 
 /* Responsive adjustments for different sidebar widths */
