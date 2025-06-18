@@ -1,5 +1,7 @@
 # Text Matching Chrome Extension
 
+**[🌐 Visit the Project Website](https://itscaveman.github.io/TextMatchChromeExtension/)**
+
 A barebones Chrome extension that allows you to search for and highlight text on any webpage using a convenient sidebar interface.
 
 ## Features
