@@ -364,6 +364,7 @@
             height: 10rem;
             min-height: 10rem;
             padding: 0;
+            padding-left: 2rem;
         }
 
         #rightTable td {
@@ -551,18 +552,19 @@ RESPONSE FORMAT:
   "original_review": "" // this is the original review. only return from the user's input.
   "original_english_translation": // this is the original english translation. only return from the user's input.
 
-  "corrected_review": "" // correct obvious typos in the original review text and remove obviously unrelated information. Keep the review organic.
+  "corrected_review": "" // correct obvious spelling errors in the original review text, and remove obviously unrelated information. Keep the review organic. do not add punctuations or other corrections. do not end with a period unless the original review also did
   "corrections": "" // what changes where made between the original review and the corrected review. e.g spelling, removed irrelevant information, partially rephrased
 
   "sentiment": "" // a sentiment score of the original review. options are: [negative, slightly negative, neutral, slightly positive, positive]
 
   "original_translation": "" // your/GPT english translation of the original review.
-  "corrected_translation": "" // your/GPT english translation of the corrected_review.
+  "corrected_translation": "" // your/GPT english translation of the corrected_review. do not end with a period
 
   "korean_translation": // translate the original review to korean as close/organically as possible.
 
   "detected_languages": "" // Window's Emojis of all languages detected in the original review.
 }
+
                 </textarea>
             </div>
             
@@ -681,6 +683,26 @@ RESPONSE FORMAT:
                     // Get the original text content, stripping HTML tags
                     const text = this.textContent || this.innerText;
                     copyToClipboard(text);
+                });
+            });
+        }
+
+        // Function to add special click-to-copy functionality for the left table (copies both columns with tab delimiter)
+        function addLeftTableCopyFunctionality(table) {
+            const cells = table.querySelectorAll('td');
+            cells.forEach(cell => {
+                cell.addEventListener('click', function() {
+                    // Get the row this cell belongs to
+                    const row = this.parentElement;
+                    const cells = row.querySelectorAll('td');
+                    
+                    // Extract text from both columns
+                    const correctedReview = cells[0] ? (cells[0].textContent || cells[0].innerText) : '';
+                    const correctedTranslation = cells[1] ? (cells[1].textContent || cells[1].innerText) : '';
+                    
+                    // Combine with tab delimiter
+                    const combinedText = correctedReview + '\t' + correctedTranslation;
+                    copyToClipboard(combinedText);
                 });
             });
         }
@@ -1282,7 +1304,7 @@ ${jsonPreviewText}
             // Add click-to-copy functionality for both tables
             const leftTable = document.getElementById('leftTable');
             const rightTable = document.getElementById('rightTable');
-            addCopyFunctionality(leftTable);
+            addLeftTableCopyFunctionality(leftTable); // Special functionality for left table
             addCopyFunctionality(rightTable);
         }
 
