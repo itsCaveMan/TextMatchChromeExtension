@@ -268,7 +268,7 @@
 
         .debugGroup {
             /* display: none; */
-            opacity: 0.5;
+            opacity: 0.2;
         }
 
         .faded {
@@ -334,17 +334,73 @@
 
         .fixed-height-table td {
             border: 1px solid #e1e5e9;
-            padding: 0.5rem;
+            padding: 0rem;
             text-align: left;
             vertical-align: top;
-            height: 4rem;
-            max-height: 4rem;
-            overflow: auto;
+
             line-height: 1.4;
             word-wrap: break-word;
             cursor: pointer;
             transition: background-color 0.2s ease;
             user-select: text;
+            
+            overflow-x: hidden;
+            overflow-y: scroll;
+
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            &::-webkit-scrollbar {
+                display: none;
+            }
+
+        }
+
+        td {
+            border: 0px solid #e1e5e9 !important;
+        }
+
+        /* Specific height adjustments for left and right tables */
+        #leftTable td {
+            height: 10rem;
+            min-height: 10rem;
+            padding: 0;
+        }
+
+        #rightTable td {
+            height: 5rem;
+            min-height: 5rem;
+            padding: 0;
+        }
+
+        /* Content wrapper divs inside table cells */
+        #leftTable td .cell-content {
+            height: 10rem;
+            max-height: 10rem;
+            min-height: 10rem;
+            overflow-x: auto;
+            overflow-y: auto;
+            padding: 0rem;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        #leftTable td .cell-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        #rightTable td .cell-content {
+            height: 5rem;
+            max-height: 5rem;
+            min-height: 5rem;
+            overflow-x: auto;
+            overflow-y: auto;
+            padding: 0rem;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        #rightTable td .cell-content::-webkit-scrollbar {
+            display: none;
         }
 
         .fixed-height-table td:hover {
@@ -360,8 +416,8 @@
         }
 
         .diff-removed {
-            background-color: #ffeeba;
-            color: #856404;
+            background-color: #f8d7da;
+            color: #721c24;
             padding: 1px 3px;
             border-radius: 3px;
             margin: 0 1px;
@@ -369,11 +425,56 @@
         }
 
         .diff-changed {
-            background-color: #f8d7da;
-            color: #721c24;
+            background-color: #ffeeba;
+            color: #856404;
             padding: 1px 3px;
             border-radius: 3px;
             margin: 0 1px;
+        }
+
+        .sentiment-negative {
+            background-color: #f8d7da;
+            color: #721c24;
+            font-weight: 600;
+            text-align: center;
+            border-radius: 4px;
+            padding: 4px 8px;
+        }
+
+        .sentiment-slightly-negative {
+            background-color: #fff3cd;
+            color: #856404;
+            font-weight: 600;
+            text-align: center;
+            border-radius: 4px;
+            padding: 4px 8px;
+        }
+
+        .sentiment-neutral {
+            background-color: #e2e3e5;
+            color: #495057;
+            font-weight: 600;
+            text-align: center;
+            border-radius: 4px;
+            padding: 4px 8px;
+        }
+
+        .sentiment-slightly-positive {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            font-weight: 600;
+            text-align: center;
+            border-radius: 4px;
+            padding: 4px 8px;
+        }
+
+        .sentiment-positive {
+            background-color: #d4edda;
+            color: #155724;
+            font-weight: 600;
+            text-align: center;
+            border-radius: 4px;
+            padding: 4px 8px;
         }
 
     </style>
@@ -398,9 +499,9 @@
                     <div class="flex-col">
                         <label for="modelSelect">OpenAI Model</label>
                         <select id="modelSelect" name="modelSelect" required>
-                            <option value="o1">o1</option>
-                            <option value="gpt-4.1">GPT-4.1</option>
-                            <option value="o3">o3</option>
+                            <option value="o3">o3 ($10 per 100k words)</option>
+                            <option value="gpt-4.1">GPT-4.1 ($10 per 100k words)</option>
+                            <option value="o1">o1 ($100 per 100k words)</option>
                         </select>
                     </div>
                 </div>
@@ -451,12 +552,20 @@ RESPONSE FORMAT:
   "original_review": "" // this is the original review. only return from the user's input.
   "original_english_translation": // this is the original english translation. only return from the user's input.
 
-  "corrected_review": "" // correct obvious typos in the original review text and remove unrelated information. Keep the review organic
+  "corrected_review": "" // correct obvious typos in the original review text and remove obviously unrelated information. Keep the review organic.
+  "corrections": "" // what changes where made between the original review and the corrected review. e.g spelling, removed irrelevant information, partially rephrased
+
+  "sentiment": "" // a sentiment score of the original review. options are: [negative, slightly negative, neutral, slightly positive, positive]
+
   "original_translation": "" // your/GPT english translation of the original review.
   "corrected_translation": "" // your/GPT english translation of the corrected_review.
 
+  "korean_translation": // translate the original review to korean as close/organically as possible.
+
   "detected_languages": "" // Window's Emojis of all languages detected in the original review.
 }
+
+
 
                 </textarea>
             </div>
@@ -476,6 +585,9 @@ RESPONSE FORMAT:
             
             <button type="submit" class="button" id="submitBtn">Analyze with GPT</button>
             <button type="button" class="" onclick="clearAll()">Clear All</button>
+            <div id="costDisplay" style="display: none; margin-top: 1rem; color: #666; font-size: 2rem;">
+                Cost for last request: <span id="costAmount" style="font-weight: bold; color: #333;">$0.00</span>
+            </div>
         </form>
         
         <div id="result" class="loading" style="margin-top: 2rem; display: none;"></div>
@@ -491,6 +603,12 @@ RESPONSE FORMAT:
         <div id="dualTableContainer" class="dual-table-container" style="display: none;">
             <div class="table-info">
                 <strong>Dual Table View:</strong> <span id="dualTableInfo"></span>
+                <br>
+                <small style="margin-top: 5px; display: inline-block;">
+                    <strong>Legend:</strong> 
+                    <span style="background-color: #ffeeba; color: #856404; padding: 1px 3px; border-radius: 3px;">Yellow highlight</span> = corrected/changed text • 
+                    <span style="background-color: #f8d7da; color: #721c24; padding: 1px 3px; border-radius: 3px; text-decoration: line-through;">Red strikethrough</span> = removed text
+                </small>
             </div>
             <div class="dual-table-wrapper">
                 <div class="left-table-section">
@@ -511,9 +629,9 @@ RESPONSE FORMAT:
                         <table id="rightTable" class="fixed-height-table">
                             <thead>
                                 <tr>
+                                    <th>ExcelReview</th>
+                                    <th>Excel English</th>
                                     <th>Languages</th>
-                                    <th>Original Review</th>
-                                    <th>Translation of Original</th>
                                 </tr>
                             </thead>
                             <tbody id="rightTableBody">
@@ -587,9 +705,9 @@ RESPONSE FORMAT:
             if (savedModel) {
                 document.getElementById('modelSelect').value = savedModel;
             } else {
-                // Default to o1 if nothing saved
-                document.getElementById('modelSelect').value = 'o1';
-                localStorage.setItem('openai_model', 'o1');
+                // Default to o3 if nothing saved
+                document.getElementById('modelSelect').value = 'o3';
+                localStorage.setItem('openai_model', 'o3');
             }
             
             if (savedPrompt) {
@@ -628,6 +746,15 @@ RESPONSE FORMAT:
                     // Clear invalid saved response
                     localStorage.removeItem('openai_response');
                 }
+            }
+            
+            // Load and display saved cost
+            const savedCost = localStorage.getItem('last_request_cost');
+            if (savedCost) {
+                const costDisplay = document.getElementById('costDisplay');
+                const costAmount = document.getElementById('costAmount');
+                costAmount.textContent = `$${savedCost}`;
+                costDisplay.style.display = 'block';
             }
         });
 
@@ -883,7 +1010,7 @@ ${jsonPreviewText}
                         ],
                         // max_tokens: 1500,
                         // temperature: 0.7
-                        reasoning_effort: 'high',
+                        // reasoning_effort: 'high',
                         response_format: { type: 'json_object' }
                     })
                 });
@@ -895,6 +1022,26 @@ ${jsonPreviewText}
                 
                 const data = await response.json();
                 const analysisResult = data.choices[0].message.content;
+                
+                // Calculate and display cost
+                if (data.usage) {
+                    const inputTokens = data.usage.prompt_tokens || 0;
+                    const outputTokens = data.usage.completion_tokens || 0;
+                    
+                    // Cost calculation: $2 per million input tokens, $8 per million output tokens
+                    const inputCost = (inputTokens / 1000000) * 2;
+                    const outputCost = (outputTokens / 1000000) * 8;
+                    const totalCost = inputCost + outputCost;
+                    
+                    // Display cost
+                    const costDisplay = document.getElementById('costDisplay');
+                    const costAmount = document.getElementById('costAmount');
+                    costAmount.textContent = `$${totalCost.toFixed(4)}`;
+                    costDisplay.style.display = 'block';
+                    
+                    // Save cost info to localStorage
+                    localStorage.setItem('last_request_cost', totalCost.toFixed(4));
+                }
                 
                 // Save the response to localStorage
                 localStorage.setItem('openai_response', analysisResult);
@@ -1034,41 +1181,100 @@ ${jsonPreviewText}
                 const leftRow = document.createElement('tr');
                 
                 const correctedReviewCell = document.createElement('td');
-                correctedReviewCell.textContent = review.corrected_review || review.original_review || '';
+                const correctedReviewDiv = document.createElement('div');
+                correctedReviewDiv.className = 'cell-content';
+                correctedReviewDiv.textContent = review.corrected_review || review.original_review || '';
+                correctedReviewCell.appendChild(correctedReviewDiv);
                 leftRow.appendChild(correctedReviewCell);
                 
                 const correctedTranslationCell = document.createElement('td');
-                correctedTranslationCell.textContent = review.corrected_translation || review.translation_of_original_review || review.gpt_translation || review.english_translation || '';
+                const correctedTranslationDiv = document.createElement('div');
+                correctedTranslationDiv.className = 'cell-content';
+                correctedTranslationDiv.textContent = review.corrected_translation || review.translation_of_original_review || review.gpt_translation || review.english_translation || '';
+                correctedTranslationCell.appendChild(correctedTranslationDiv);
                 leftRow.appendChild(correctedTranslationCell);
                 
                 leftTableBody.appendChild(leftRow);
                 
-                // Right table: detected_languages | original_review | translation_of_original_review
-                const rightRow = document.createElement('tr');
-                
-                const detectedLanguagesCell = document.createElement('td');
-                detectedLanguagesCell.textContent = review.detected_languages || '';
-                rightRow.appendChild(detectedLanguagesCell);
+                // Right table: First row - original_review | original_english_translation | detected_languages
+                const rightRow1 = document.createElement('tr');
                 
                 const originalReviewCell = document.createElement('td');
+                const originalReviewDiv = document.createElement('div');
+                originalReviewDiv.className = 'cell-content';
                 const highlightedOriginalReview = highlightOriginalTextDifferences(
                     review.original_review || '', 
                     review.corrected_review || ''
                 );
-                originalReviewCell.innerHTML = highlightedOriginalReview;
-                rightRow.appendChild(originalReviewCell);
+                originalReviewDiv.innerHTML = highlightedOriginalReview;
+                originalReviewCell.appendChild(originalReviewDiv);
+                rightRow1.appendChild(originalReviewCell);
                 
-                const translationOfOriginalCell = document.createElement('td');
-                const originalTranslation = review.translation_of_original_review || review.original_english_translation || '';
+                const originalEnglishTranslationCell = document.createElement('td');
+                const originalEnglishTranslationDiv = document.createElement('div');
+                originalEnglishTranslationDiv.className = 'cell-content';
+                const originalTranslation = review.original_english_translation || review.translation_of_original_review || '';
                 const correctedTranslation = review.corrected_translation || '';
                 const highlightedOriginalTranslation = highlightOriginalTextDifferences(
                     originalTranslation,
                     correctedTranslation
                 );
-                translationOfOriginalCell.innerHTML = highlightedOriginalTranslation;
-                rightRow.appendChild(translationOfOriginalCell);
+                originalEnglishTranslationDiv.innerHTML = highlightedOriginalTranslation;
+                originalEnglishTranslationCell.appendChild(originalEnglishTranslationDiv);
+                rightRow1.appendChild(originalEnglishTranslationCell);
                 
-                rightTableBody.appendChild(rightRow);
+                const detectedLanguagesCell = document.createElement('td');
+                const detectedLanguagesDiv = document.createElement('div');
+                detectedLanguagesDiv.className = 'cell-content';
+                detectedLanguagesDiv.textContent = review.detected_languages || '';
+                detectedLanguagesCell.appendChild(detectedLanguagesDiv);
+                rightRow1.appendChild(detectedLanguagesCell);
+                
+                rightTableBody.appendChild(rightRow1);
+                
+                // Right table: Second row - corrections | korean_translation | sentiment
+                const rightRow2 = document.createElement('tr');
+                
+                const correctionsCell = document.createElement('td');
+                const correctionsDiv = document.createElement('div');
+                correctionsDiv.className = 'cell-content';
+                correctionsDiv.textContent = review.corrections || '';
+                correctionsCell.appendChild(correctionsDiv);
+                rightRow2.appendChild(correctionsCell);
+                
+                const koreanTranslationCell = document.createElement('td');
+                const koreanTranslationDiv = document.createElement('div');
+                koreanTranslationDiv.className = 'cell-content';
+                koreanTranslationDiv.textContent = review.korean_translation || '';
+                koreanTranslationCell.appendChild(koreanTranslationDiv);
+                rightRow2.appendChild(koreanTranslationCell);
+                
+                const sentimentCell = document.createElement('td');
+                const sentimentDiv = document.createElement('div');
+                sentimentDiv.className = 'cell-content';
+                const sentimentValue = review.sentiment || '';
+                sentimentDiv.textContent = sentimentValue;
+                
+                // Apply sentiment styling
+                if (sentimentValue) {
+                    const sentimentLower = sentimentValue.toLowerCase().trim();
+                    if (sentimentLower === 'negative') {
+                        sentimentDiv.classList.add('sentiment-negative');
+                    } else if (sentimentLower === 'slightly negative') {
+                        sentimentDiv.classList.add('sentiment-slightly-negative');
+                    } else if (sentimentLower === 'neutral') {
+                        sentimentDiv.classList.add('sentiment-neutral');
+                    } else if (sentimentLower === 'slightly positive') {
+                        sentimentDiv.classList.add('sentiment-slightly-positive');
+                    } else if (sentimentLower === 'positive') {
+                        sentimentDiv.classList.add('sentiment-positive');
+                    }
+                }
+                
+                sentimentCell.appendChild(sentimentDiv);
+                rightRow2.appendChild(sentimentCell);
+                
+                rightTableBody.appendChild(rightRow2);
             });
             
             // Update table info
@@ -1092,12 +1298,14 @@ ${jsonPreviewText}
             document.getElementById('resultContainer').style.display = 'none';
             document.getElementById('tableContainer').style.display = 'none'; // Hide table
             document.getElementById('dualTableContainer').style.display = 'none'; // Hide dual table view
+            document.getElementById('costDisplay').style.display = 'none'; // Hide cost display
             
-            // Clear localStorage for prompt, text, JSON, and OpenAI response (keep API key)
+            // Clear localStorage for prompt, text, JSON, OpenAI response, and cost (keep API key)
             localStorage.removeItem('llm_prompt');
             localStorage.removeItem('text_to_analyze');
             localStorage.removeItem('json_preview');
             localStorage.removeItem('openai_response');
+            localStorage.removeItem('last_request_cost');
         }
     </script>
 </body>
