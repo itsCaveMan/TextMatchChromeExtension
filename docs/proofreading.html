@@ -268,11 +268,11 @@
 
         .debugGroup {
             /* display: none; */
-            opacity: 0.2;
+            opacity: 0.8;
         }
 
         .faded {
-            opacity: 0.2;
+            opacity: 0.8;
         }
 
         .dual-table-container {
@@ -537,15 +537,14 @@
                     rows="3"
                     placeholder="" 
                     required>
-Context: you are given review data in the form of JSON. 
+Context: you are given a arbitrary number of reviews, the data is in the form of JSON. 
 
-Follow the tasks in the JSON response format. 
+Task: Follow the tasks in the JSON response format. 
 
-The main tasks are:
-- correct typos in the original review text. I want a organic review, but correct major mistakes
+Take note of:
 - remove irrelevant information in the original review. e.g "after a delicious dinner and coming home i tried the product and it works great" should be modified to simply "i tried the product and it works great". rephase/paraphrase if necessary. 
 - translate the original review to English, translate your corrected review to english
-- detect other languages used in the review 
+
 
 RESPONSE FORMAT:
 {
@@ -564,9 +563,6 @@ RESPONSE FORMAT:
 
   "detected_languages": "" // Window's Emojis of all languages detected in the original review.
 }
-
-
-
                 </textarea>
             </div>
             
