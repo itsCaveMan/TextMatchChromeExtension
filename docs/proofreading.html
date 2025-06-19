@@ -21,7 +21,7 @@
             border-radius: 15px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             text-align: center;
-            width: 80%;
+            width: 95%;
         }
         
         h1 {
@@ -35,6 +35,21 @@
             margin-bottom: 2rem;
         }
         
+        .flex-row {
+            display: flex;
+            gap: 1rem;
+            align-items: end;
+        }
+        
+        .flex-col {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .flex-grow {
+            flex: 1;
+        }
+        
         label {
             display: block;
             margin-bottom: 0.5rem;
@@ -43,7 +58,7 @@
             text-align: left;
         }
         
-        input[type="password"], input[type="text"] {
+        input[type="password"], input[type="text"], select {
             width: 100%;
             padding: 1rem;
             border: 2px solid #e1e5e9;
@@ -67,7 +82,7 @@
             font-family: inherit;
         }
         
-        input:focus, textarea:focus {
+        input:focus, textarea:focus, select:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -134,7 +149,7 @@
             color: #555;
             line-height: 1.6;
             white-space: pre-wrap;
-            max-height: 200px;
+            max-height: 50px;
             overflow-y: auto;
             border: 1px solid #e1e5e9;
             padding: 1rem;
@@ -215,53 +230,7 @@
             color: #666;
         }
 
-        .results-table-container {
-            margin-top: 1.5rem;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            overflow: auto;
-            display: none;
-        }
 
-        .results-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-
-        .results-table th,
-        .results-table td {
-            border: 1px solid #e1e5e9;
-            padding: 0.75rem;
-            text-align: left;
-            vertical-align: top;
-        }
-
-        .results-table th {
-            background-color: #f8f9fa;
-            font-weight: 600;
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-
-        .results-table .original-row {
-            background-color: #f8f9fa;
-        }
-
-        .results-table .corrected-row {
-            background-color: #ffffff;
-        }
-
-        .results-table .accurate-true {
-            color: #28a745;
-            font-weight: 600;
-        }
-
-        .results-table .accurate-false {
-            color: #dc3545;
-            font-weight: 600;
-        }
 
         .diff-highlight {
             background-color: #fff3cd;
@@ -271,14 +240,12 @@
             margin: 0 1px;
         }
 
-        .data-table td,
-        .results-table td {
+        .data-table td {
             cursor: pointer;
             transition: background-color 0.2s ease;
         }
 
-        .data-table td:hover,
-        .results-table td:hover {
+        .data-table td:hover {
             background-color: #e9ecef !important;
         }
 
@@ -298,59 +265,149 @@
         .copy-feedback.show {
             opacity: 1;
         }
+
+        .debugGroup {
+            /* display: none; */
+            opacity: 0.5;
+        }
+
+        .faded {
+            opacity: 0.2;
+        }
+
+        .dual-table-container {
+            margin-top: 1.5rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .dual-table-wrapper {
+            display: flex;
+            gap: 0;
+        }
+
+        .left-table-section,
+        .right-table-section {
+            flex: 1;
+            border-right: 1px solid #e1e5e9;
+        }
+
+        .right-table-section {
+            border-right: none;
+        }
+
+        .left-table-section h4,
+        .right-table-section h4 {
+            margin: 0;
+            padding: 0.75rem;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e1e5e9;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+        }
+
+        .fixed-height-table-container {
+            overflow: auto;
+            max-height: 400px;
+        }
+
+        .fixed-height-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .fixed-height-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            padding: 0.5rem;
+            border: 1px solid #e1e5e9;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .fixed-height-table td {
+            border: 1px solid #e1e5e9;
+            padding: 0.5rem;
+            text-align: left;
+            vertical-align: top;
+            height: 4rem;
+            max-height: 4rem;
+            overflow: auto;
+            line-height: 1.4;
+            word-wrap: break-word;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            user-select: text;
+        }
+
+        .fixed-height-table td:hover {
+            background-color: #e9ecef !important;
+        }
+
+        .fixed-height-table tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .fixed-height-table tbody tr:hover {
+            background-color: #e9ecef;
+        }
+
+        .diff-removed {
+            background-color: #ffeeba;
+            color: #856404;
+            padding: 1px 3px;
+            border-radius: 3px;
+            margin: 0 1px;
+            text-decoration: line-through;
+        }
+
+        .diff-changed {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 1px 3px;
+            border-radius: 3px;
+            margin: 0 1px;
+        }
+
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="navigation">
-            <a href="index.html" class="nav-link">← Back to Main</a>
-        </div>
-        
+
         <h1>Proof Read Sentiment App</h1>
-        <p class="description">
-            Enter your OpenAI API key, customize your prompt, and get AI-powered text analysis.
-        </p>
-        
+
         <form id="textForm">
             <div class="input-group">
-                <label for="apiKey">OpenAI API Key</label>
-                <input 
-                    type="password" 
-                    id="apiKey" 
-                    name="apiKey" 
-                    placeholder="sk-..." 
-                    required>
+                <div class="flex-row">
+                    <div class="flex-col flex-grow">
+                        <label for="apiKey">OpenAI API Key</label>
+                        <input 
+                            type="password" 
+                            id="apiKey" 
+                            name="apiKey" 
+                            placeholder="sk-..." 
+                            required>
+                    </div>
+                    <div class="flex-col">
+                        <label for="modelSelect">OpenAI Model</label>
+                        <select id="modelSelect" name="modelSelect" required>
+                            <option value="o1">o1</option>
+                            <option value="gpt-4.1">GPT-4.1</option>
+                            <option value="o3">o3</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="api-key-note">Your API key is stored locally and never shared.</div>
             </div>
-            
-            <div class="input-group">
-                <label for="promptInput">LLM Prompt</label>
-                <textarea 
-                    id="promptInput" 
-                    name="promptInput" 
-                    rows="3"
-                    placeholder="" 
-                    required>
-Context: you are given review data in the form of JSON. 
-
-Follow the tasks in the JSON response format. 
-Those are 3 tasks:
-- correct any typos in the original review text
-- translate the review to English
-- was the original translation accurate
-
-RESPONSE FORMAT:
-{
-    "original_review": "" // the original review
-    "corrected_review": "" // the original review with any typos corrected
-    "english_translation": // the original english translation
-    "gpt_translation": "" // your/GPT english translation
-    "review_language": "", // what language is the review written in, emoji + name
-    "detected_languages": "" // Emojis of other languages detected in the original review
-}
-</textarea>
-            </div>
-            
-            <div class="input-group">
+                        
+            <div class="input-group debugGroup">
                 <label for="jsonPreview">JSON Preview</label>
                 <textarea 
                     id="jsonPreview" 
@@ -362,9 +419,51 @@ RESPONSE FORMAT:
                     >
                 </textarea>
             </div>
+
+            <div id="tableContainer" class="table-container faded">
+                <div class="table-info">
+                    <strong>Table Preview:</strong> <span id="tableInfo"></span>
+                </div>
+                <table id="dataTable" class="data-table">
+                </table>
+            </div>
+                
+            <div class="input-group debugGroup">
+                <label for="promptInput">LLM Prompt</label>
+                <textarea 
+                    id="promptInput" 
+                    name="promptInput" 
+                    rows="3"
+                    placeholder="" 
+                    required>
+Context: you are given review data in the form of JSON. 
+
+Follow the tasks in the JSON response format. 
+
+The main tasks are:
+- correct typos in the original review text. I want a organic review, but correct major mistakes
+- remove irrelevant information in the original review. e.g "after a delicious dinner and coming home i tried the product and it works great" should be modified to simply "i tried the product and it works great". rephase/paraphrase if necessary. 
+- translate the original review to English, translate your corrected review to english
+- detect other languages used in the review 
+
+RESPONSE FORMAT:
+{
+  "original_review": "" // this is the original review. only return from the user's input.
+  "original_english_translation": // this is the original english translation. only return from the user's input.
+
+  "corrected_review": "" // correct obvious typos in the original review text and remove unrelated information. Keep the review organic
+  "original_translation": "" // your/GPT english translation of the original review.
+  "corrected_translation": "" // your/GPT english translation of the corrected_review.
+
+  "detected_languages": "" // Window's Emojis of all languages detected in the original review.
+}
+
+                </textarea>
+            </div>
+            
             
             <div class="input-group">
-                <h1 for="textInput">Text to Analyze</h1>
+                <h1 for="textInput">Copy and Paste from excel</h1>
                 <textarea 
                     id="textInput" 
                     name="textInput" 
@@ -372,43 +471,59 @@ RESPONSE FORMAT:
                     rows="20"
                     required>
                 </textarea>
-                
-                <div id="tableContainer" class="table-container">
-                    <div class="table-info">
-                        <strong>Table Preview:</strong> <span id="tableInfo"></span>
-                    </div>
-                    <table id="dataTable" class="data-table">
-                    </table>
-                </div>
+
             </div>
             
             <button type="submit" class="button" id="submitBtn">Analyze with GPT</button>
-            <button type="button" class="button" onclick="clearAll()">Clear All</button>
+            <button type="button" class="" onclick="clearAll()">Clear All</button>
         </form>
         
         <div id="result" class="loading" style="margin-top: 2rem; display: none;"></div>
         
         <div id="resultContainer" class="result-container">
             <h3>AI Analysis Results</h3>
-            <div id="resultText" class="result-text"></div>
-            
-            <div id="resultsTableContainer" class="results-table-container">
-                <div class="table-info">
-                    <strong>Analysis Results Table:</strong> <span id="resultsTableInfo"></span>
+            <div id="resultText" class="result-text debugGroup"></div>
+        </div>
+
+
+
+        <!-- DUAL TABLE VIEW -->
+        <div id="dualTableContainer" class="dual-table-container" style="display: none;">
+            <div class="table-info">
+                <strong>Dual Table View:</strong> <span id="dualTableInfo"></span>
+            </div>
+            <div class="dual-table-wrapper">
+                <div class="left-table-section">
+                    <h4>Corrected Data</h4>
+                        <table id="leftTable" class="fixed-height-table">
+                            <thead>
+                                <tr>
+                                    <th>Corrected Review</th>
+                                    <th>Corrected Translation</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leftTableBody">
+                            </tbody>
+                        </table>
                 </div>
-                <table id="resultsTable" class="results-table">
-                    <thead>
-                        <tr>
-                            <th>Original Review</th>
-                            <th>English Translation</th>
-                            <th>Languages</th>
-                        </tr>
-                    </thead>
-                    <tbody id="resultsTableBody">
-                    </tbody>
-                </table>
+                <div class="right-table-section">
+                    <h4>Original Data</h4>
+                        <table id="rightTable" class="fixed-height-table">
+                            <thead>
+                                <tr>
+                                    <th>Languages</th>
+                                    <th>Original Review</th>
+                                    <th>Translation of Original</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rightTableBody">
+                            </tbody>
+                        </table>
+                </div>
             </div>
         </div>
+
+
     </div>
 
     <div id="copyFeedback" class="copy-feedback">Copied to clipboard!</div>
@@ -459,12 +574,22 @@ RESPONSE FORMAT:
         // Load saved values on page load
         window.addEventListener('load', function() {
             const savedApiKey = localStorage.getItem('openai_api_key');
+            const savedModel = localStorage.getItem('openai_model');
             const savedPrompt = localStorage.getItem('llm_prompt');
             const savedText = localStorage.getItem('text_to_analyze');
             const savedJson = localStorage.getItem('json_preview');
+            const savedResponse = localStorage.getItem('openai_response');
             
             if (savedApiKey) {
                 document.getElementById('apiKey').value = savedApiKey;
+            }
+            
+            if (savedModel) {
+                document.getElementById('modelSelect').value = savedModel;
+            } else {
+                // Default to o1 if nothing saved
+                document.getElementById('modelSelect').value = 'o1';
+                localStorage.setItem('openai_model', 'o1');
             }
             
             if (savedPrompt) {
@@ -485,11 +610,34 @@ RESPONSE FORMAT:
             if (savedJson) {
                 document.getElementById('jsonPreview').value = savedJson;
             }
+            
+            // Load and display saved OpenAI response
+            if (savedResponse) {
+                try {
+                    const resultContainer = document.getElementById('resultContainer');
+                    const resultText = document.getElementById('resultText');
+                    
+                    // Display the saved response
+                    resultText.textContent = savedResponse;
+                    resultContainer.style.display = 'block';
+                    
+                    // Display results in tables
+                    displayResults(savedResponse);
+                } catch (error) {
+                    console.error('Error loading saved OpenAI response:', error);
+                    // Clear invalid saved response
+                    localStorage.removeItem('openai_response');
+                }
+            }
         });
 
         // Save values to localStorage when they change
         document.getElementById('apiKey').addEventListener('input', function() {
             localStorage.setItem('openai_api_key', this.value);
+        });
+
+        document.getElementById('modelSelect').addEventListener('change', function() {
+            localStorage.setItem('openai_model', this.value);
         });
 
         document.getElementById('promptInput').addEventListener('input', function() {
@@ -672,6 +820,7 @@ RESPONSE FORMAT:
             e.preventDefault();
             
             const apiKey = document.getElementById('apiKey').value.trim();
+            const selectedModel = document.getElementById('modelSelect').value;
             const prompt = document.getElementById('promptInput').value.trim();
             const text = document.getElementById('textInput').value.trim();
             
@@ -725,7 +874,7 @@ ${jsonPreviewText}
                         'Authorization': `Bearer ${apiKey}`
                     },
                     body: JSON.stringify({
-                        model: 'gpt-4.1',
+                        model: selectedModel,
                         messages: [
                             {
                                 role: 'user',
@@ -734,6 +883,8 @@ ${jsonPreviewText}
                         ],
                         // max_tokens: 1500,
                         // temperature: 0.7
+                        reasoning_effort: 'high',
+                        response_format: { type: 'json_object' }
                     })
                 });
                 
@@ -745,13 +896,16 @@ ${jsonPreviewText}
                 const data = await response.json();
                 const analysisResult = data.choices[0].message.content;
                 
+                // Save the response to localStorage
+                localStorage.setItem('openai_response', analysisResult);
+                
                 // Display results
                 resultDiv.style.display = 'none';
                 resultText.textContent = analysisResult;
                 resultContainer.style.display = 'block';
                 
-                // Try to display results in table format
-                displayResultsTable(analysisResult);
+                // Display results in tables
+                displayResults(analysisResult);
                 
             } catch (error) {
                 console.error('Error:', error);
@@ -781,15 +935,54 @@ ${jsonPreviewText}
             }).join('');
         }
 
-        // Function to parse and display GPT results in table format
-        function displayResultsTable(gptResponse) {
-            const resultsTableContainer = document.getElementById('resultsTableContainer');
-            const resultsTableBody = document.getElementById('resultsTableBody');
-            const resultsTableInfo = document.getElementById('resultsTableInfo');
+        // Function to highlight differences in original text compared to corrected text
+        function highlightOriginalTextDifferences(originalText, correctedText) {
+            if (!originalText || !correctedText) {
+                return originalText || '';
+            }
             
-            // Clear existing table content
-            resultsTableBody.innerHTML = '';
+            // Split texts into tokens (words, punctuation, whitespace) while preserving everything
+            const originalTokens = originalText.split(/(\s+|[^\w\s])/);
+            const correctedTokens = correctedText.split(/(\s+|[^\w\s])/);
             
+            // Create sets for quick lookup
+            const correctedTokenSet = new Set(correctedTokens.filter(token => token.trim()));
+            
+            // Build the highlighted original text
+            return originalTokens.map(token => {
+                if (token.trim()) {
+                    // If token exists in original but not in corrected (removed/changed)
+                    if (!correctedTokenSet.has(token)) {
+                        // Check if it's a word vs punctuation to determine highlighting type
+                        const isWord = /\w/.test(token);
+                        const isPunctuation = /[^\w\s]/.test(token);
+                        
+                        if (isPunctuation) {
+                            // For punctuation, just mark as removed
+                            return `<span class="diff-removed">${token}</span>`;
+                        } else if (isWord) {
+                            // For words, check if it's a typo/correction by looking for similar words
+                            const isTypo = correctedTokens.some(correctedToken => 
+                                correctedToken.trim() && 
+                                /\w/.test(correctedToken) &&
+                                (token.toLowerCase().includes(correctedToken.toLowerCase().substring(0, 3)) ||
+                                correctedToken.toLowerCase().includes(token.toLowerCase().substring(0, 3)))
+                            );
+                            
+                            if (isTypo) {
+                                return `<span class="diff-changed">${token}</span>`;
+                            } else {
+                                return `<span class="diff-removed">${token}</span>`;
+                            }
+                        }
+                    }
+                }
+                return token;
+            }).join('');
+        }
+
+        // Function to parse and display GPT results
+        function displayResults(gptResponse) {
             try {
                 // Try to parse the response as JSON
                 let jsonData;
@@ -799,8 +992,6 @@ ${jsonPreviewText}
                     if (jsonMatch) {
                         jsonData = JSON.parse(jsonMatch[0]);
                     } else {
-                        // If no JSON array found, hide the table
-                        resultsTableContainer.style.display = 'none';
                         return;
                     }
                 } else {
@@ -808,94 +999,105 @@ ${jsonPreviewText}
                 }
                 
                 if (!Array.isArray(jsonData) || jsonData.length === 0) {
-                    resultsTableContainer.style.display = 'none';
                     return;
                 }
                 
-                // Populate the table with data
-                jsonData.forEach((review, index) => {
-                    // Create original review row
-                    const originalRow = document.createElement('tr');
-                    originalRow.className = 'original-row';
-                    
-                    const originalReviewCell = document.createElement('td');
-                    originalReviewCell.textContent = review.original_review || '';
-                    originalRow.appendChild(originalReviewCell);
-                    
-                    const englishTranslationCell = document.createElement('td');
-                    englishTranslationCell.textContent = review.english_translation || '';
-                    originalRow.appendChild(englishTranslationCell);
-                    
-                    const reviewLanguageCell = document.createElement('td');
-                    reviewLanguageCell.textContent = review.review_language || '';
-                    originalRow.appendChild(reviewLanguageCell);
-                    
-                    resultsTableBody.appendChild(originalRow);
-                    
-                    // Create corrected review row with diff highlighting
-                    const correctedRow = document.createElement('tr');
-                    correctedRow.className = 'corrected-row';
-                    
-                    const correctedReviewCell = document.createElement('td');
-                    const reviewDiff = createTextDiff(review.original_review || '', review.corrected_review || '');
-                    correctedReviewCell.innerHTML = reviewDiff;
-                    correctedRow.appendChild(correctedReviewCell);
-                    
-                    const gptTranslationCell = document.createElement('td');
-                    const translationDiff = createTextDiff(review.english_translation || '', review.gpt_translation || '');
-                    gptTranslationCell.innerHTML = translationDiff;
-                    correctedRow.appendChild(gptTranslationCell);
-                    
-                    const detectedLanguagesCell = document.createElement('td');
-                    detectedLanguagesCell.textContent = review.detected_languages || '';
-                    correctedRow.appendChild(detectedLanguagesCell);
-                    
-                    resultsTableBody.appendChild(correctedRow);
-                    
-                    // Add a blank separator row after each review pair (except for the last one)
-                    if (index < jsonData.length - 1) {
-                        const separatorRow = document.createElement('tr');
-                        const separatorCell = document.createElement('td');
-                        separatorCell.colSpan = 3;
-                        separatorCell.style.height = '20px';
-                        separatorCell.style.borderTop = 'none';
-                        separatorCell.style.borderBottom = 'none';
-                        separatorCell.style.backgroundColor = 'transparent';
-                        separatorCell.innerHTML = '&nbsp;';
-                        separatorRow.appendChild(separatorCell);
-                        resultsTableBody.appendChild(separatorRow);
-                    }
-                });
-                
-                // Update table info
-                resultsTableInfo.textContent = `${jsonData.length} reviews analyzed`;
-                
-                // Show the table
-                resultsTableContainer.style.display = 'block';
-                
-                // Add click-to-copy functionality
-                const resultsTable = document.getElementById('resultsTable');
-                addCopyFunctionality(resultsTable);
+                // Populate the dual table view
+                populateDualTableView(jsonData);
                 
             } catch (error) {
-                console.error('Error parsing GPT response for table:', error);
-                resultsTableContainer.style.display = 'none';
+                console.error('Error parsing GPT response:', error);
             }
+        }
+
+
+
+        // Function to populate the dual table view
+        function populateDualTableView(jsonData) {
+            const dualTableContainer = document.getElementById('dualTableContainer');
+            const leftTableBody = document.getElementById('leftTableBody');
+            const rightTableBody = document.getElementById('rightTableBody');
+            const dualTableInfo = document.getElementById('dualTableInfo');
+            
+            // Clear existing table content
+            leftTableBody.innerHTML = '';
+            rightTableBody.innerHTML = '';
+            
+            if (!Array.isArray(jsonData) || jsonData.length === 0) {
+                dualTableContainer.style.display = 'none';
+                return;
+            }
+            
+            // Populate both tables with data
+            jsonData.forEach((review, index) => {
+                // Left table: corrected_review | corrected_translation
+                const leftRow = document.createElement('tr');
+                
+                const correctedReviewCell = document.createElement('td');
+                correctedReviewCell.textContent = review.corrected_review || review.original_review || '';
+                leftRow.appendChild(correctedReviewCell);
+                
+                const correctedTranslationCell = document.createElement('td');
+                correctedTranslationCell.textContent = review.corrected_translation || review.translation_of_original_review || review.gpt_translation || review.english_translation || '';
+                leftRow.appendChild(correctedTranslationCell);
+                
+                leftTableBody.appendChild(leftRow);
+                
+                // Right table: detected_languages | original_review | translation_of_original_review
+                const rightRow = document.createElement('tr');
+                
+                const detectedLanguagesCell = document.createElement('td');
+                detectedLanguagesCell.textContent = review.detected_languages || '';
+                rightRow.appendChild(detectedLanguagesCell);
+                
+                const originalReviewCell = document.createElement('td');
+                const highlightedOriginalReview = highlightOriginalTextDifferences(
+                    review.original_review || '', 
+                    review.corrected_review || ''
+                );
+                originalReviewCell.innerHTML = highlightedOriginalReview;
+                rightRow.appendChild(originalReviewCell);
+                
+                const translationOfOriginalCell = document.createElement('td');
+                const originalTranslation = review.translation_of_original_review || review.original_english_translation || '';
+                const correctedTranslation = review.corrected_translation || '';
+                const highlightedOriginalTranslation = highlightOriginalTextDifferences(
+                    originalTranslation,
+                    correctedTranslation
+                );
+                translationOfOriginalCell.innerHTML = highlightedOriginalTranslation;
+                rightRow.appendChild(translationOfOriginalCell);
+                
+                rightTableBody.appendChild(rightRow);
+            });
+            
+            // Update table info
+            dualTableInfo.textContent = `${jsonData.length} reviews in dual view`;
+            
+            // Show the table
+            dualTableContainer.style.display = 'block';
+            
+            // Add click-to-copy functionality for both tables
+            const leftTable = document.getElementById('leftTable');
+            const rightTable = document.getElementById('rightTable');
+            addCopyFunctionality(leftTable);
+            addCopyFunctionality(rightTable);
         }
 
         function clearAll() {
             document.getElementById('textInput').value = '';
             document.getElementById('jsonPreview').value = '';
-            document.getElementById('promptInput').value = 'Please proofread the following text and analyze its sentiment. Provide corrections for any grammar, spelling, or style issues, and give an overall sentiment analysis:';
+            document.getElementById('promptInput').value = '';
             document.getElementById('result').style.display = 'none';
             document.getElementById('resultContainer').style.display = 'none';
             document.getElementById('tableContainer').style.display = 'none'; // Hide table
-            document.getElementById('resultsTableContainer').style.display = 'none'; // Hide results table
+            document.getElementById('dualTableContainer').style.display = 'none'; // Hide dual table view
             
-            // Clear localStorage for prompt, text, and JSON (keep API key)
+            // Clear localStorage for prompt, text, JSON, and OpenAI response (keep API key)
             localStorage.removeItem('llm_prompt');
             localStorage.removeItem('text_to_analyze');
             localStorage.removeItem('json_preview');
+            localStorage.removeItem('openai_response');
         }
     </script>
 </body>
