@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPTTable - TextMatch</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: white;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: none;
+            width: 100%;
+            padding: 0;
+        }
+        
+        h1 {
+            color: #333;
+            margin: 0 0 20px 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .navigation {
+            margin-bottom: 20px;
+        }
+        
+        .nav-link {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        .nav-link:hover {
+            text-decoration: underline;
+        }
+        
+        .description {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .input-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .input-group label {
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .textarea, .api-key-input {
+            width: 100%;
+            min-height: 120px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        
+        .api-key-input {
+            min-height: auto;
+            height: 40px;
+        }
+        
+        .textarea:focus, .api-key-input:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+        
+        .button {
+            background: #0066cc;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .button:hover {
+            background: #0052a3;
+        }
+        
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: #ccc;
+        }
+        
+        .button.secondary {
+            background: #666;
+        }
+        
+        .button.secondary:hover {
+            background: #555;
+        }
+        
+        .button.success {
+            background: #28a745;
+        }
+        
+        .button.success:hover {
+            background: #218838;
+        }
+        
+        .response-section {
+            margin-top: 20px;
+        }
+        
+        .response-area {
+            background: #f8f9fa;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 15px;
+            min-height: 150px;
+            white-space: pre-wrap;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            color: #333;
+            overflow-x: auto;
+        }
+        
+        .response-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: white;
+            border: 1px solid #ddd;
+        }
+        
+        .response-table th {
+            background: #f0f0f0;
+            color: #333;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            border-bottom: 1px solid #ccc;
+            border-right: 1px solid #ddd;
+        }
+        
+        .response-table td {
+            padding: 8px 10px 8px 15px;
+            border-bottom: 1px solid #eee;
+            border-right: 1px solid #ddd;
+            font-size: 13px;
+            vertical-align: top;
+        }
+        
+        .response-table td:first-child {
+            background: #f5f5f5;
+        }
+        
+        .response-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        .json-view {
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .response-area.loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .api-key-section {
+            margin-bottom: 20px;
+        }
+        
+        .note-section {
+            margin-bottom: 20px;
+        }
+        
+        .error {
+            color: #d73502;
+            background: #fef2f2;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #d73502;
+            margin-top: 10px;
+        }
+        
+        .chunking-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .progress-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .progress-section h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 18px;
+        }
+        
+        .overall-progress {
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .calls-list {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .call-item {
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            overflow: hidden;
+        }
+        
+        .call-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+        }
+        
+        .call-response {
+            border-top: 1px solid #eee;
+            background: #fafafa;
+        }
+        
+        .call-response-header {
+            background: #f0f0f0;
+            padding: 8px 15px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .call-response-content {
+            padding: 15px;
+            background: white;
+        }
+        
+        .call-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .call-title {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .call-details {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .call-status {
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+        
+        .call-status.pending {
+            background: #e9ecef;
+            color: #6c757d;
+        }
+        
+        .call-status.processing {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .call-status.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .call-status.failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .call-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .call-actions .button {
+            margin: 0;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        
+        .retry-button {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .retry-button:hover {
+            background: #e0a800;
+        }
+        
+        .view-button {
+            background: #17a2b8;
+        }
+        
+        .view-button:hover {
+            background: #138496;
+        }
+        
+        @media (max-width: 768px) {
+            .input-section {
+                grid-template-columns: 1fr;
+            }
+            
+            body {
+                padding: 10px;
+            }
+            
+            .call-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .call-actions {
+                align-self: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="navigation">
+            <a href="index.html" class="nav-link">← Back to Home</a>
+        </div>
+        
+        <h1>GPTTable</h1>
+        
+        <p class="description">
+            Enter your OpenAI API key, system instructions, and chat input to interact with GPT.
+        </p>
+        
+        <div class="note-section">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; align-items: end;">
+                <div>
+                    <label for="noteInput">Note:</label>
+                    <input type="text" id="noteInput" class="api-key-input" placeholder="Add a note...">
+                </div>
+                <div>
+                    <label for="taskSelect">Task Reminder:</label>
+                    <select id="taskSelect" class="api-key-input" style="font-weight: bold; font-size: 16px; height: 50px;">
+                        <option value="">What are you doing?</option>
+                        <option value="check-positive">Check all positive</option>
+                        <option value="check-negative">Check all negative</option>
+                        <option value="check-spelling">Check spelling</option>
+                        <option value="rewrite-duplicates">Re-write duplicates</option>
+                        <option value="remove-unrelated">Remove un-related information</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="columnSelect">Column:</label>
+                    <select id="columnSelect" class="api-key-input" style="font-weight: bold; font-size: 16px; height: 50px;">
+                        <option value="">Select column...</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                        <option value="E">E</option>
+                        <option value="F">F</option>
+                        <option value="G">G</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="api-key-section">
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px; align-items: end;">
+                <div>
+                    <label for="apiKey">OpenAI API Key:</label>
+                    <input type="password" id="apiKey" class="api-key-input" placeholder="Enter your OpenAI API key (sk-...)">
+                </div>
+                <div>
+                    <label for="modelSelect">Model:</label>
+                    <select id="modelSelect" class="api-key-input">
+                        <option value="o3" selected>o3 (best. slowest)</option>
+                        <option value="o4-mini">o4-mini (good. faster)</option>
+                        <option value="gpt-4.1">gpt-4.1 (no thinking. fastest)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="input-section">
+            <div class="input-group">
+                <label for="systemInstructions">System Instructions:</label>
+                <textarea 
+                    id="systemInstructions" 
+                    class="textarea" 
+                    placeholder="Enter system instructions for GPT (e.g., 'You are a helpful assistant that...')"
+                    rows="20"
+                ></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label for="userInput">Chat Input: <span id="lineCounter" style="color: #666; font-weight: normal;">(1 line)</span></label>
+                <textarea 
+                    id="userInput" 
+                    class="textarea" 
+                    placeholder="Enter your message or question for GPT..."
+                    rows="20"
+                ></textarea>
+            </div>
+        </div>
+        
+        <div class="chunking-section">
+            <label for="chunkSize">Lines per call:</label>
+            <input type="number" id="chunkSize" value="25" min="1" max="1000" style="width: 80px; padding: 5px; margin-left: 10px; margin-right: 20px;">
+            <span id="chunkPreview" style="color: #666; font-size: 13px;"></span>
+        </div>
+        
+        <button id="sendButton" class="button">Send to GPT</button>
+        <button id="clearButton" class="button secondary">Clear All</button>
+        <button id="tableButton" class="button success" style="display: none;">Convert to Table</button>
+        
+        <div id="progressSection" style="display: none;" class="progress-section">
+            <h3>Call Progress & Responses</h3>
+            <div id="overallProgress" class="overall-progress"></div>
+            <div id="callsList" class="calls-list"></div>
+        </div>
+        
+        <div class="response-section" style="display: none;">
+            <label>GPT Response:</label>
+            <div id="responseArea" class="response-area">Response will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        const apiKeyInput = document.getElementById('apiKey');
+        const modelSelect = document.getElementById('modelSelect');
+        const systemInstructionsInput = document.getElementById('systemInstructions');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+        const clearButton = document.getElementById('clearButton');
+        const tableButton = document.getElementById('tableButton');
+        const responseArea = document.getElementById('responseArea');
+        const lineCounter = document.getElementById('lineCounter');
+        const chunkSizeInput = document.getElementById('chunkSize');
+        const chunkPreview = document.getElementById('chunkPreview');
+        const progressSection = document.getElementById('progressSection');
+        const overallProgress = document.getElementById('overallProgress');
+        const callsList = document.getElementById('callsList');
+        
+        let lastGptResponse = null;
+        let callsData = [];
+        let allResponses = [];
+        
+        // Load saved data from localStorage
+        const savedApiKey = localStorage.getItem('gpt_api_key');
+        const savedModel = localStorage.getItem('gpt_model');
+        
+        if (savedApiKey) {
+            apiKeyInput.value = savedApiKey;
+        }
+        
+        if (savedModel) {
+            modelSelect.value = savedModel;
+        }
+        
+        // Save API key, model, and system instructions when they change
+        apiKeyInput.addEventListener('input', () => {
+            localStorage.setItem('gpt_api_key', apiKeyInput.value);
+        });
+        
+        modelSelect.addEventListener('change', () => {
+            localStorage.setItem('gpt_model', modelSelect.value);
+        });
+        
+        systemInstructionsInput.addEventListener('input', () => {
+            localStorage.setItem('gpt_system_instructions', systemInstructionsInput.value);
+        });
+        
+        sendButton.addEventListener('click', async () => {
+            const apiKey = apiKeyInput.value.trim();
+            const systemInstructions = systemInstructionsInput.value.trim();
+            const message = userInput.value.trim();
+            const chunkSize = parseInt(chunkSizeInput.value) || 25;
+            
+            if (!apiKey) {
+                showError('Please enter your OpenAI API key');
+                return;
+            }
+            
+            if (!message) {
+                showError('Please enter a message');
+                return;
+            }
+            
+            // Split input into chunks
+            const lines = message.split('\n');
+            const chunks = [];
+            
+            for (let i = 0; i < lines.length; i += chunkSize) {
+                chunks.push(lines.slice(i, i + chunkSize).join('\n'));
+            }
+            
+            // Initialize calls data
+            callsData = chunks.map((chunk, index) => ({
+                id: index + 1,
+                input: chunk,
+                status: 'pending',
+                response: null,
+                error: null,
+                startLine: (index * chunkSize) + 1,
+                endLine: Math.min((index + 1) * chunkSize, lines.length)
+            }));
+            
+            allResponses = [];
+            
+            // Show progress section
+            progressSection.style.display = 'block';
+            updateProgressDisplay();
+            
+            // Clear response area initially
+            responseArea.className = 'response-area';
+            responseArea.textContent = 'Processing chunks...';
+            tableButton.style.display = 'none';
+            
+            // Disable send button during processing
+            sendButton.disabled = true;
+            
+            // Process all chunks
+            await processAllChunks(apiKey, systemInstructions);
+        });
+        
+        clearButton.addEventListener('click', () => {
+            userInput.value = '';
+            responseArea.className = 'response-area';
+            responseArea.textContent = 'Response will appear here...';
+            tableButton.style.display = 'none';
+            lastGptResponse = null;
+            callsData = [];
+            allResponses = [];
+            progressSection.style.display = 'none';
+            // Clear the calls list DOM elements
+            callsList.innerHTML = '';
+            updateChunkPreview();
+        });
+        
+        tableButton.addEventListener('click', () => {
+            if (lastGptResponse) {
+                forceTableConversion(lastGptResponse);
+            }
+        });
+        
+        function displayResponse(gptResponse) {
+            console.log('Raw GPT Response:', gptResponse);
+            
+            try {
+                // Try to parse as JSON
+                const jsonData = JSON.parse(gptResponse);
+                console.log('Parsed JSON:', jsonData);
+                
+                let arrayData = null;
+                
+                // Check if it's directly an array
+                if (Array.isArray(jsonData)) {
+                    arrayData = jsonData;
+                } else if (typeof jsonData === 'object' && jsonData !== null) {
+                    // Look for array properties in the object
+                    const possibleArrayKeys = Object.keys(jsonData).filter(key => 
+                        Array.isArray(jsonData[key]) && jsonData[key].length > 0
+                    );
+                    
+                    if (possibleArrayKeys.length > 0) {
+                        // Use the first array found
+                        arrayData = jsonData[possibleArrayKeys[0]];
+                        console.log(`Found array in property: ${possibleArrayKeys[0]}`, arrayData);
+                    }
+                }
+                
+                // If we found an array with data, create a table
+                if (arrayData && arrayData.length > 0) {
+                    console.log('Creating table with data:', arrayData);
+                    const table = createTableFromArray(arrayData);
+                    responseArea.innerHTML = '';
+                    responseArea.appendChild(table);
+                } else {
+                    // Display formatted JSON if not an array or empty
+                    console.log('Displaying as formatted JSON');
+                    responseArea.innerHTML = `<div class="json-view">${JSON.stringify(jsonData, null, 2)}</div>`;
+                }
+            } catch (error) {
+                console.log('JSON parsing failed:', error);
+                // If not valid JSON, display as text
+                responseArea.innerHTML = `<div class="json-view">${escapeHtml(gptResponse)}</div>`;
+            }
+        }
+        
+        function createTableFromArray(data) {
+            const table = document.createElement('table');
+            table.className = 'response-table';
+            
+            // Get column names from first object
+            const columns = Object.keys(data[0]);
+            
+            // Create header
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            
+            columns.forEach(column => {
+                const th = document.createElement('th');
+                th.textContent = column.replace(/_/g, ' ').toUpperCase();
+                headerRow.appendChild(th);
+            });
+            
+            // Add copy action column header
+            const copyTh = document.createElement('th');
+            copyTh.textContent = 'COPY';
+            copyTh.style.textAlign = 'center';
+            copyTh.style.backgroundColor = '#e8f4f8';
+            headerRow.appendChild(copyTh);
+            
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            // Create body
+            const tbody = document.createElement('tbody');
+            
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                
+                columns.forEach(column => {
+                    const td = document.createElement('td');
+                    const value = row[column];
+                    
+                    // Handle different data types
+                    if (value === null || value === undefined) {
+                        td.textContent = 'N/A';
+                        td.style.fontStyle = 'italic';
+                        td.style.color = '#999';
+                    } else if (typeof value === 'object') {
+                        td.textContent = JSON.stringify(value);
+                    } else {
+                        td.textContent = String(value);
+                    }
+                    
+                    tr.appendChild(td);
+                });
+                
+                // Add copy action cell
+                const copyTd = document.createElement('td');
+                copyTd.textContent = '📋';
+                copyTd.style.textAlign = 'center';
+                copyTd.style.cursor = 'pointer';
+                copyTd.style.backgroundColor = '#4ea72e';
+                copyTd.style.userSelect = 'none';
+                copyTd.className = 'copy-action-cell';
+                copyTd.title = 'Click to copy correction + english';
+                tr.appendChild(copyTd);
+                
+                tbody.appendChild(tr);
+            });
+            
+            table.appendChild(tbody);
+            return table;
+        }
+        
+        function forceTableConversion(gptResponse) {
+            console.log('Force table conversion for:', gptResponse);
+            
+            try {
+                const jsonData = JSON.parse(gptResponse);
+                console.log('Parsed data for force conversion:', jsonData);
+                
+                let arrayData = null;
+                
+                // More aggressive search for arrays
+                if (Array.isArray(jsonData)) {
+                    arrayData = jsonData;
+                } else if (typeof jsonData === 'object' && jsonData !== null) {
+                    // Look through all properties for arrays
+                    const findArrays = (obj, path = '') => {
+                        const arrays = [];
+                        for (const [key, value] of Object.entries(obj)) {
+                            const currentPath = path ? `${path}.${key}` : key;
+                            if (Array.isArray(value) && value.length > 0) {
+                                arrays.push({ path: currentPath, data: value, length: value.length });
+                            } else if (typeof value === 'object' && value !== null) {
+                                arrays.push(...findArrays(value, currentPath));
+                            }
+                        }
+                        return arrays;
+                    };
+                    
+                    const foundArrays = findArrays(jsonData);
+                    console.log('Found arrays:', foundArrays);
+                    
+                    if (foundArrays.length > 0) {
+                        // Use the largest array found
+                        const largestArray = foundArrays.reduce((prev, current) => 
+                            current.length > prev.length ? current : prev
+                        );
+                        arrayData = largestArray.data;
+                        console.log(`Using array from ${largestArray.path} with ${largestArray.length} items`);
+                    }
+                }
+                
+                if (arrayData && arrayData.length > 0) {
+                    // Check if array contains objects (for table conversion)
+                    if (arrayData.every(item => typeof item === 'object' && item !== null && !Array.isArray(item))) {
+                        const table = createTableFromArray(arrayData);
+                        responseArea.innerHTML = '';
+                        responseArea.appendChild(table);
+                        console.log('Successfully created table');
+                    } else {
+                        showError('Array found but items are not objects suitable for table conversion');
+                    }
+                } else {
+                    showError('No suitable array data found for table conversion');
+                }
+            } catch (error) {
+                console.log('Force conversion failed:', error);
+                showError(`Failed to convert to table: ${error.message}`);
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function showError(message) {
+            responseArea.className = 'response-area';
+            responseArea.innerHTML = `<div class="error">${message}</div>`;
+        }
+        
+        // Update line counter and chunk preview
+        function updateLineCounter() {
+            const lines = userInput.value.split('\n').length;
+            lineCounter.textContent = `(${lines} line${lines !== 1 ? 's' : ''})`;
+            updateChunkPreview();
+        }
+        
+        function updateChunkPreview() {
+            const lines = userInput.value.split('\n').length;
+            const chunkSize = parseInt(chunkSizeInput.value) || 25;
+            const totalChunks = Math.ceil(lines / chunkSize);
+            
+            if (lines > 1 && totalChunks > 1) {
+                chunkPreview.textContent = `Will create ${totalChunks} calls (${chunkSize} lines each)`;
+            } else if (lines > 1) {
+                chunkPreview.textContent = `Single call (${lines} lines)`;
+            } else {
+                chunkPreview.textContent = '';
+            }
+        }
+        
+        userInput.addEventListener('input', updateLineCounter);
+        chunkSizeInput.addEventListener('input', updateChunkPreview);
+        
+        // Allow Ctrl+Enter to send
+        userInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                sendButton.click();
+            }
+        });
+        
+        // Chunk processing functions
+        async function processAllChunks(apiKey, systemInstructions) {
+            try {
+                // Process chunks sequentially to avoid rate limiting
+                for (let i = 0; i < callsData.length; i++) {
+                    await processChunk(callsData[i], apiKey, systemInstructions);
+                    updateProgressDisplay();
+                    updateCombinedResponse();
+                }
+                
+                // All chunks complete
+                sendButton.disabled = false;
+                
+                // Show table button if combined response contains JSON
+                const combinedResponse = allResponses.join('\n');
+                try {
+                    JSON.parse(combinedResponse);
+                    tableButton.style.display = 'inline-block';
+                } catch (e) {
+                    // Not JSON, that's fine
+                }
+                
+            } catch (error) {
+                console.error('Error processing chunks:', error);
+                sendButton.disabled = false;
+            }
+        }
+        
+        async function processChunk(callData, apiKey, systemInstructions) {
+            try {
+                callData.status = 'processing';
+                updateProgressDisplay();
+                
+                const messages = [];
+                
+                if (systemInstructions) {
+                    messages.push({
+                        role: 'system',
+                        content: systemInstructions
+                    });
+                }
+                
+                messages.push({
+                    role: 'user',
+                    content: callData.input
+                });
+                
+                // Get the selected model
+                const selectedModel = modelSelect.value;
+                
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: selectedModel,
+                        messages: messages,
+                        response_format: { type: "json_object" },
+                        // reasoning_effort: "low"
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const gptResponse = data.choices[0]?.message?.content || 'No response received';
+                
+                callData.status = 'completed';
+                callData.response = gptResponse;
+                callData.error = null;
+                
+                // Add to responses array in order
+                allResponses[callData.id - 1] = gptResponse;
+                
+            } catch (error) {
+                console.error(`Error processing chunk ${callData.id}:`, error);
+                callData.status = 'failed';
+                callData.error = error.message;
+                callData.response = null;
+            }
+        }
+        
+        async function retryChunk(callId) {
+            const callData = callsData.find(c => c.id === callId);
+            if (!callData) return;
+            
+            const apiKey = apiKeyInput.value.trim();
+            const systemInstructions = systemInstructionsInput.value.trim();
+            
+            await processChunk(callData, apiKey, systemInstructions);
+            updateProgressDisplay();
+            updateCombinedResponse();
+        }
+        
+        function updateProgressDisplay() {
+            const completed = callsData.filter(c => c.status === 'completed').length;
+            const failed = callsData.filter(c => c.status === 'failed').length;
+            const processing = callsData.filter(c => c.status === 'processing').length;
+            const pending = callsData.filter(c => c.status === 'pending').length;
+            
+            overallProgress.innerHTML = `
+                <strong>Progress:</strong> ${completed}/${callsData.length} completed
+                ${failed > 0 ? `, ${failed} failed` : ''}
+                ${processing > 0 ? `, ${processing} processing` : ''}
+                ${pending > 0 ? `, ${pending} pending` : ''}
+            `;
+            
+            // Update or create call items
+            callsData.forEach(callData => {
+                const existingItem = document.getElementById(`call-item-${callData.id}`);
+                
+                if (existingItem) {
+                    // Update existing item
+                    updateExistingCallItem(existingItem, callData);
+                } else {
+                    // Create new item
+                    const callItem = createCallItem(callData);
+                    callsList.appendChild(callItem);
+                }
+            });
+        }
+        
+        function updateExistingCallItem(item, callData) {
+            // Update status
+            const status = item.querySelector('.call-status');
+            if (status) {
+                status.className = `call-status ${callData.status}`;
+                status.textContent = callData.status.toUpperCase();
+            }
+            
+            // Update details (to show error if any)
+            const details = item.querySelector('.call-details');
+            if (details) {
+                details.textContent = `Lines ${callData.startLine}-${callData.endLine}`;
+                if (callData.error) {
+                    details.textContent += ` • Error: ${callData.error}`;
+                }
+            }
+            
+            // Update actions
+            const actions = item.querySelector('.call-actions');
+            if (actions) {
+                actions.innerHTML = '';
+                
+                if (callData.status === 'failed' || callData.status === 'completed') {
+                    const retryBtn = document.createElement('button');
+                    retryBtn.className = 'button retry-button';
+                    retryBtn.textContent = 'Retry';
+                    retryBtn.onclick = () => retryChunk(callData.id);
+                    actions.appendChild(retryBtn);
+                }
+                
+                if (callData.response || callData.error) {
+                    const viewBtn = document.createElement('button');
+                    viewBtn.className = 'button view-button';
+                    viewBtn.textContent = 'View Details';
+                    viewBtn.onclick = () => viewChunkDetails(callData);
+                    actions.appendChild(viewBtn);
+                }
+            }
+            
+            // Add or update response section
+            if (callData.response && callData.status === 'completed') {
+                let responseSection = document.getElementById(`call-response-${callData.id}`);
+                
+                if (!responseSection) {
+                    // Create response section
+                    responseSection = document.createElement('div');
+                    responseSection.className = 'call-response';
+                    responseSection.id = `call-response-${callData.id}`;
+                    
+                    const responseHeader = document.createElement('div');
+                    responseHeader.className = 'call-response-header';
+                    responseHeader.textContent = 'Response:';
+                    
+                    const responseContent = document.createElement('div');
+                    responseContent.className = 'call-response-content';
+                    responseContent.id = `call-response-content-${callData.id}`;
+                    
+                    responseSection.appendChild(responseHeader);
+                    responseSection.appendChild(responseContent);
+                    item.appendChild(responseSection);
+                }
+                
+                // Update response content
+                updateCallResponse(callData);
+            } else {
+                // Remove response section if status changed
+                const responseSection = document.getElementById(`call-response-${callData.id}`);
+                if (responseSection) {
+                    responseSection.remove();
+                }
+            }
+        }
+        
+        function createCallItem(callData) {
+            const item = document.createElement('div');
+            item.className = 'call-item';
+            item.id = `call-item-${callData.id}`;
+            
+            // Create header section
+            const header = document.createElement('div');
+            header.className = 'call-header';
+            
+            const info = document.createElement('div');
+            info.className = 'call-info';
+            
+            const title = document.createElement('div');
+            title.className = 'call-title';
+            title.textContent = `Call ${callData.id}`;
+            
+            const details = document.createElement('div');
+            details.className = 'call-details';
+            details.textContent = `Lines ${callData.startLine}-${callData.endLine}`;
+            if (callData.error) {
+                details.textContent += ` • Error: ${callData.error}`;
+            }
+            
+            info.appendChild(title);
+            info.appendChild(details);
+            
+            const status = document.createElement('span');
+            status.className = `call-status ${callData.status}`;
+            status.textContent = callData.status.toUpperCase();
+            
+            const actions = document.createElement('div');
+            actions.className = 'call-actions';
+            
+            if (callData.status === 'failed' || callData.status === 'completed') {
+                const retryBtn = document.createElement('button');
+                retryBtn.className = 'button retry-button';
+                retryBtn.textContent = 'Retry';
+                retryBtn.onclick = () => retryChunk(callData.id);
+                actions.appendChild(retryBtn);
+            }
+            
+            if (callData.response || callData.error) {
+                const viewBtn = document.createElement('button');
+                viewBtn.className = 'button view-button';
+                viewBtn.textContent = 'View Details';
+                viewBtn.onclick = () => viewChunkDetails(callData);
+                actions.appendChild(viewBtn);
+            }
+            
+            header.appendChild(info);
+            header.appendChild(status);
+            header.appendChild(actions);
+            item.appendChild(header);
+            
+            // Create response section (initially hidden)
+            if (callData.response && callData.status === 'completed') {
+                const responseSection = document.createElement('div');
+                responseSection.className = 'call-response';
+                responseSection.id = `call-response-${callData.id}`;
+                
+                const responseHeader = document.createElement('div');
+                responseHeader.className = 'call-response-header';
+                responseHeader.textContent = 'Response:';
+                
+                const responseContent = document.createElement('div');
+                responseContent.className = 'call-response-content';
+                responseContent.id = `call-response-content-${callData.id}`;
+                
+                responseSection.appendChild(responseHeader);
+                responseSection.appendChild(responseContent);
+                item.appendChild(responseSection);
+                
+                // Populate the response content
+                updateCallResponse(callData);
+            }
+            
+            return item;
+        }
+        
+        function viewChunkDetails(callData) {
+            const popup = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
+            popup.document.write(`
+                <html>
+                <head><title>Call ${callData.id} Details</title></head>
+                <body style="font-family: monospace; padding: 20px;">
+                <h2>Call ${callData.id} - Lines ${callData.startLine}-${callData.endLine}</h2>
+                <h3>Input:</h3>
+                <pre style="background: #f0f0f0; padding: 10px; border-radius: 4px;">${callData.input}</pre>
+                <h3>${callData.status === 'failed' ? 'Error:' : 'Response:'}</h3>
+                <pre style="background: #f0f0f0; padding: 10px; border-radius: 4px;">${callData.response || callData.error || 'No data'}</pre>
+                </body>
+                </html>
+            `);
+            popup.document.close();
+        }
+        
+        function updateCallResponse(callData) {
+            const responseContent = document.getElementById(`call-response-content-${callData.id}`);
+            if (!responseContent || !callData.response) return;
+            
+            responseContent.innerHTML = '';
+            
+            try {
+                // Try to parse as JSON and create table
+                const jsonData = JSON.parse(callData.response);
+                console.log(`Call ${callData.id} - Parsed JSON:`, jsonData);
+                
+                let arrayData = null;
+                
+                // Check if it's directly an array
+                if (Array.isArray(jsonData)) {
+                    arrayData = jsonData;
+                } else if (typeof jsonData === 'object' && jsonData !== null) {
+                    // Look for array properties in the object
+                    const possibleArrayKeys = Object.keys(jsonData).filter(key => 
+                        Array.isArray(jsonData[key]) && jsonData[key].length > 0
+                    );
+                    
+                    if (possibleArrayKeys.length > 0) {
+                        // Use the first array found
+                        arrayData = jsonData[possibleArrayKeys[0]];
+                        console.log(`Call ${callData.id} - Found array in property: ${possibleArrayKeys[0]}`, arrayData);
+                    }
+                }
+                
+                // If we found an array with data, create a table
+                if (arrayData && arrayData.length > 0) {
+                    console.log(`Call ${callData.id} - Creating table with data:`, arrayData);
+                    const table = createTableFromArray(arrayData);
+                    responseContent.appendChild(table);
+                } else {
+                    // Display formatted JSON if not an array or empty
+                    console.log(`Call ${callData.id} - Displaying as formatted JSON`);
+                    const jsonView = document.createElement('div');
+                    jsonView.className = 'json-view';
+                    jsonView.textContent = JSON.stringify(jsonData, null, 2);
+                    responseContent.appendChild(jsonView);
+                }
+            } catch (error) {
+                console.log(`Call ${callData.id} - JSON parsing failed:`, error);
+                // If not valid JSON, display as text
+                const textView = document.createElement('div');
+                textView.className = 'json-view';
+                textView.textContent = callData.response;
+                responseContent.appendChild(textView);
+            }
+        }
+        
+        function updateCombinedResponse() {
+            // This function now just triggers updates to individual call items
+            // The actual response display is handled in updateProgressDisplay
+            
+            // Update lastGptResponse with all completed responses for the "Convert to Table" button
+            const completedCalls = callsData.filter(call => call.status === 'completed' && call.response);
+            const allResponsesText = completedCalls.map(call => call.response).join('\n\n');
+            lastGptResponse = allResponsesText;
+            
+            // Show table button if any tables were created
+            const hasAnyTable = completedCalls.some(call => {
+                try {
+                    const jsonData = JSON.parse(call.response);
+                    return Array.isArray(jsonData) || 
+                           (typeof jsonData === 'object' && jsonData !== null && 
+                            Object.values(jsonData).some(value => Array.isArray(value)));
+                } catch (error) {
+                    return false;
+                }
+            });
+            tableButton.style.display = hasAnyTable ? 'inline-block' : 'none';
+        }
+        
+        // Scroll synchronization between tabs - DISABLED
+        /*
+        let isScrolling = false;
+        let scrollTimeout = null;
+        
+        // Function to save scroll position to localStorage
+        function saveScrollPosition() {
+            const scrollData = {
+                x: window.scrollX,
+                y: window.scrollY,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('scroll_sync', JSON.stringify(scrollData));
+        }
+        
+        // Function to apply scroll position from localStorage
+        function applyScrollPosition(scrollData) {
+            if (scrollData && scrollData.x !== undefined && scrollData.y !== undefined) {
+                isScrolling = true;
+                window.scrollTo(scrollData.x, scrollData.y);
+                
+                // Reset the flag after a short delay
+                setTimeout(() => {
+                    isScrolling = false;
+                }, 100);
+            }
+        }
+        
+        // Listen for scroll events on this tab
+        window.addEventListener('scroll', () => {
+            // Only save scroll position if we're not currently applying a sync
+            if (!isScrolling) {
+                // Debounce the scroll saving to avoid excessive localStorage writes
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    saveScrollPosition();
+                }, 16); // ~60fps
+            }
+        });
+        
+        // Listen for storage changes from other tabs
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'scroll_sync' && e.newValue) {
+                try {
+                    const scrollData = JSON.parse(e.newValue);
+                    
+                    // Only apply if the change is recent (within 1 second)
+                    // This prevents applying stale scroll positions
+                    if (Date.now() - scrollData.timestamp < 1000) {
+                        applyScrollPosition(scrollData);
+                    }
+                } catch (error) {
+                    console.warn('Failed to parse scroll sync data:', error);
+                }
+            }
+        });
+        
+        // Apply initial scroll position when page loads (if available)
+        window.addEventListener('load', () => {
+            const savedScroll = localStorage.getItem('scroll_sync');
+            if (savedScroll) {
+                try {
+                    const scrollData = JSON.parse(savedScroll);
+                    // Only apply if the saved position is recent (within 10 seconds)
+                    if (Date.now() - scrollData.timestamp < 10000) {
+                        applyScrollPosition(scrollData);
+                    }
+                } catch (error) {
+                    console.warn('Failed to parse saved scroll data:', error);
+                }
+            }
+        });
+        */
+        
+        console.log('GPTTable page loaded with scroll sync disabled');
+        
+        // Add copy event listener to trim trailing tabs
+        document.addEventListener('copy', function(e) {
+            try {
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const selectedText = selection.toString();
+                    
+                    // Check if the selected text ends with tab characters
+                    if (selectedText.endsWith('\t')) {
+                        // Trim trailing tabs and whitespace
+                        const trimmedText = selectedText.replace(/\t+$/, '');
+                        
+                        // Replace the clipboard content with trimmed text
+                        e.clipboardData.setData('text/plain', trimmedText);
+                        e.preventDefault();
+                        
+                        console.log('Trimmed trailing tabs from copied text:', {
+                            original: selectedText,
+                            trimmed: trimmedText
+                        });
+                    }
+                }
+            } catch (error) {
+                console.warn('Error handling copy event:', error);
+                // Let the default copy behavior proceed if there's an error
+            }
+        });
+        
+        // Add click-to-copy functionality for table cells
+        let mouseDownTime = 0;
+        let mouseDownPos = { x: 0, y: 0 };
+        
+        document.addEventListener('mousedown', function(e) {
+            mouseDownTime = Date.now();
+            mouseDownPos = { x: e.clientX, y: e.clientY };
+        });
+        
+        document.addEventListener('click', function(e) {
+            // Handle clicks on column headers (TH)
+            if (e.target.tagName === 'TH') {
+                const clickDuration = Date.now() - mouseDownTime;
+                const mouseMovement = Math.abs(e.clientX - mouseDownPos.x) + Math.abs(e.clientY - mouseDownPos.y);
+                
+                // Check if it's a quick click (not a drag) and no text is selected
+                const selection = window.getSelection();
+                const hasSelection = selection.toString().length > 0;
+                
+                // Only copy if it's a quick click with minimal mouse movement and no existing selection
+                if (clickDuration < 300 && mouseMovement < 5 && !hasSelection) {
+                    // Don't copy the "COPY" column header
+                    if (e.target.textContent.trim().toUpperCase() === 'COPY') {
+                        return;
+                    }
+                    
+                    // Find the column index
+                    const table = e.target.closest('table');
+                    const headerRow = e.target.parentElement;
+                    const headers = headerRow.querySelectorAll('th');
+                    let columnIndex = -1;
+                    
+                    for (let i = 0; i < headers.length; i++) {
+                        if (headers[i] === e.target) {
+                            columnIndex = i;
+                            break;
+                        }
+                    }
+                    
+                    if (columnIndex >= 0) {
+                        // Collect all values from this column
+                        const tbody = table.querySelector('tbody');
+                        const rows = tbody.querySelectorAll('tr');
+                        const columnValues = [];
+                        
+                        rows.forEach(row => {
+                            const cells = row.querySelectorAll('td');
+                            if (cells[columnIndex]) {
+                                const cellValue = cells[columnIndex].textContent.trim();
+                                columnValues.push(cellValue);
+                            }
+                        });
+                        
+                        if (columnValues.length > 0) {
+                            // Create HTML table with all column values, each in its own row
+                            const tableRows = columnValues.map(value => 
+                                `<tr><td style="background-color: #4ea72e; font-family: 'Times New Roman', serif; font-size: 11pt;">${value}</td></tr>`
+                            ).join('');
+                            const htmlToCopy = `<table>${tableRows}</table>`;
+                            
+                            // Create plain text version (each value on a new line)
+                            const textToCopy = columnValues.join('\n');
+                            
+                            // Try to copy with formatting
+                            try {
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = htmlToCopy;
+                                tempDiv.style.position = 'fixed';
+                                tempDiv.style.opacity = '0';
+                                tempDiv.style.pointerEvents = 'none';
+                                document.body.appendChild(tempDiv);
+                                
+                                const selection = window.getSelection();
+                                const range = document.createRange();
+                                range.selectNodeContents(tempDiv);
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                                
+                                const success = document.execCommand('copy');
+                                
+                                selection.removeAllRanges();
+                                document.body.removeChild(tempDiv);
+                                
+                                if (success) {
+                                    console.log('Copied entire column with formatting:', {
+                                        columnHeader: e.target.textContent.trim(),
+                                        columnIndex: columnIndex,
+                                        values: columnValues,
+                                        count: columnValues.length
+                                    });
+                                    
+                                    // Visual feedback - flash yellow
+                                    const originalBg = e.target.style.backgroundColor;
+                                    const originalColor = e.target.style.color;
+                                    e.target.style.backgroundColor = '#ffeb3b';
+                                    e.target.style.color = '#333';
+                                    e.target.style.transition = 'all 0.2s';
+                                    
+                                    setTimeout(() => {
+                                        e.target.style.backgroundColor = originalBg;
+                                        e.target.style.color = originalColor;
+                                        setTimeout(() => {
+                                            e.target.style.transition = '';
+                                        }, 200);
+                                    }, 400);
+                                } else {
+                                    throw new Error('execCommand failed');
+                                }
+                                
+                            } catch (err) {
+                                console.warn('Failed to copy column with formatting, trying plain text:', err);
+                                
+                                // Fallback to plain text copy
+                                if (navigator.clipboard && navigator.clipboard.writeText) {
+                                    navigator.clipboard.writeText(textToCopy).then(() => {
+                                        console.log('Copied column as plain text (fallback):', {
+                                            columnHeader: e.target.textContent.trim(),
+                                            values: columnValues
+                                        });
+                                    }).catch(err2 => {
+                                        console.warn('Plain text fallback also failed:', err2);
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                return; // Don't proceed to TD handling
+            }
+            
+            // Only handle clicks on table cells
+            if (e.target.tagName === 'TD') {
+                const clickDuration = Date.now() - mouseDownTime;
+                const mouseMovement = Math.abs(e.clientX - mouseDownPos.x) + Math.abs(e.clientY - mouseDownPos.y);
+                
+                // Check if it's a quick click (not a drag) and no text is selected
+                const selection = window.getSelection();
+                const hasSelection = selection.toString().length > 0;
+                
+                // Only copy if it's a quick click with minimal mouse movement and no existing selection
+                if (clickDuration < 300 && mouseMovement < 5 && !hasSelection) {
+                    
+                    // Check if this is the copy action cell
+                    if (e.target.classList.contains('copy-action-cell')) {
+                        // Find the row
+                        const row = e.target.parentElement;
+                        const cells = row.querySelectorAll('td');
+                        const table = row.closest('table');
+                        const headers = table.querySelectorAll('th');
+                        
+                        // Find correction/reworded and english columns
+                        let correctionValue = '';
+                        let rewordedValue = '';
+                        let englishValue = '';
+                        
+                        for (let i = 0; i < headers.length - 1; i++) { // -1 to exclude the copy column
+                            const headerText = headers[i].textContent.toLowerCase();
+                            const cellValue = cells[i] ? cells[i].textContent.trim() : '';
+                            
+                            if (headerText.includes('correction')) {
+                                correctionValue = cellValue;
+                            } else if (headerText.includes('reworded')) {
+                                rewordedValue = cellValue;
+                            } else if (headerText.includes('english')) {
+                                englishValue = cellValue;
+                            }
+                        }
+                        
+                        // Use correction if available, otherwise use reworded
+                        const firstColumnValue = correctionValue || rewordedValue;
+                        
+                        // Create tab-separated text for Excel
+                        const textToCopy = firstColumnValue + '\t' + englishValue;
+                        
+                        // Create HTML table with background color and font formatting for Excel
+                        const htmlToCopy = `<table><tr><td style="background-color: #4ea72e; font-family: 'Times New Roman', serif; font-size: 11pt;">${firstColumnValue}</td><td style="background-color: #4ea72e; font-family: 'Times New Roman', serif; font-size: 11pt;">${englishValue}</td></tr></table>`;
+                        
+                        if (textToCopy.trim() && textToCopy !== '\t') {
+                            // Try to copy with formatting using the older method that supports HTML
+                            try {
+                                // Create a temporary element with the HTML content
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = htmlToCopy;
+                                tempDiv.style.position = 'fixed';
+                                tempDiv.style.opacity = '0';
+                                tempDiv.style.pointerEvents = 'none';
+                                document.body.appendChild(tempDiv);
+                                
+                                // Select the content
+                                const selection = window.getSelection();
+                                const range = document.createRange();
+                                range.selectNodeContents(tempDiv);
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                                
+                                // Copy with formatting
+                                const success = document.execCommand('copy');
+                                
+                                // Clean up
+                                selection.removeAllRanges();
+                                document.body.removeChild(tempDiv);
+                                
+                                if (success) {
+                                    console.log('Copied correction/reworded + english with formatting:', {
+                                        firstColumn: firstColumnValue,
+                                        correction: correctionValue,
+                                        reworded: rewordedValue,
+                                        english: englishValue,
+                                        html: htmlToCopy
+                                    });
+                                    
+                                    // Visual feedback - permanent yellow
+                                    e.target.style.backgroundColor = '#ffeb3b';
+                                    e.target.style.transition = 'all 0.2s';
+                                } else {
+                                    throw new Error('execCommand failed');
+                                }
+                                
+                            } catch (err) {
+                                console.warn('Failed to copy with formatting, trying plain text:', err);
+                                
+                                // Fallback to plain text copy
+                                if (navigator.clipboard && navigator.clipboard.writeText) {
+                                    navigator.clipboard.writeText(textToCopy).then(() => {
+                                        console.log('Copied as plain text (fallback):', textToCopy);
+                                    }).catch(err2 => {
+                                        console.warn('Plain text fallback also failed:', err2);
+                                    });
+                                }
+                            }
+                        }
+                        
+                        return; // Don't proceed with normal cell copy
+                    }
+                    
+                    // Normal cell copy behavior
+                    const cellText = e.target.textContent.trim();
+                    
+                    if (cellText) {
+                        // Use the Clipboard API if available
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(cellText).then(() => {
+                                console.log('Copied cell content:', cellText);
+                                
+                                // Visual feedback - briefly highlight the cell
+                                const originalBg = e.target.style.backgroundColor;
+                                e.target.style.backgroundColor = '#e3f2fd';
+                                e.target.style.transition = 'background-color 0.2s';
+                                
+                                setTimeout(() => {
+                                    e.target.style.backgroundColor = originalBg;
+                                    setTimeout(() => {
+                                        e.target.style.transition = '';
+                                    }, 200);
+                                }, 200);
+                                
+                            }).catch(err => {
+                                console.warn('Failed to copy to clipboard:', err);
+                            });
+                        } else {
+                            // Fallback for older browsers
+                            try {
+                                const textArea = document.createElement('textarea');
+                                textArea.value = cellText;
+                                textArea.style.position = 'fixed';
+                                textArea.style.opacity = '0';
+                                document.body.appendChild(textArea);
+                                textArea.select();
+                                document.execCommand('copy');
+                                document.body.removeChild(textArea);
+                                
+                                console.log('Copied cell content (fallback):', cellText);
+                            } catch (err) {
+                                console.warn('Failed to copy using fallback method:', err);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html> 
