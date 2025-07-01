@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GPTTable - TextMatch</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Noto Sans KR', '맑은 고딕', 'Malgun Gothic', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             background: white;
             margin: 0;
             padding: 20px;
@@ -145,6 +148,7 @@
             margin-top: 10px;
             background: white;
             border: 1px solid #ddd;
+            font-family: 'Noto Sans KR', '맑은 고딕', 'Malgun Gothic', sans-serif;
         }
         
         .response-table th {
@@ -156,6 +160,7 @@
             font-size: 13px;
             border-bottom: 1px solid #ccc;
             border-right: 1px solid #ddd;
+            font-family: 'Noto Sans KR', '맑은 고딕', 'Malgun Gothic', sans-serif;
         }
         
         .response-table td {
@@ -164,6 +169,7 @@
             border-right: 1px solid #ddd;
             font-size: 13px;
             vertical-align: top;
+            font-family: 'Noto Sans KR', '맑은 고딕', 'Malgun Gothic', sans-serif;
         }
         
         .response-table td:first-child {
@@ -392,11 +398,11 @@
                     <label for="taskSelect">Task Reminder:</label>
                     <select id="taskSelect" class="api-key-input" style="font-weight: bold; font-size: 16px; height: 50px;">
                         <option value="">What are you doing?</option>
-                        <option value="check-positive">Check all positive</option>
-                        <option value="check-negative">Check all negative</option>
-                        <option value="check-spelling">Check spelling</option>
-                        <option value="rewrite-duplicates">Re-write duplicates</option>
-                        <option value="remove-unrelated">Remove un-related information</option>
+                        <option value="check-positive">Check all positive ✅ (9-10)</option>
+                        <option value="check-negative">Check all negative ⛔ (0 - 6)</option>
+                        <option value="check-spelling">Check spelling ✍️</option>
+                        <option value="rewrite-duplicates">Re-write duplicates 🔄</option>
+                        <option value="remove-unrelated">Remove un-related information 🗑️</option>
                     </select>
                 </div>
                 <div>
@@ -497,6 +503,7 @@
         // Load saved data from localStorage
         const savedApiKey = localStorage.getItem('gpt_api_key');
         const savedModel = localStorage.getItem('gpt_model');
+        const savedChunkSize = localStorage.getItem('gpt_chunk_size');
         
         if (savedApiKey) {
             apiKeyInput.value = savedApiKey;
@@ -504,6 +511,11 @@
         
         if (savedModel) {
             modelSelect.value = savedModel;
+        }
+        
+        if (savedChunkSize) {
+            chunkSizeInput.value = savedChunkSize;
+            updateChunkPreview(); // Update the preview text after setting the value
         }
         
         // Save API key, model, and system instructions when they change
@@ -517,6 +529,10 @@
         
         systemInstructionsInput.addEventListener('input', () => {
             localStorage.setItem('gpt_system_instructions', systemInstructionsInput.value);
+        });
+        
+        chunkSizeInput.addEventListener('input', () => {
+            localStorage.setItem('gpt_chunk_size', chunkSizeInput.value);
         });
         
         sendButton.addEventListener('click', async () => {
@@ -1337,7 +1353,7 @@
                         if (columnValues.length > 0) {
                             // Create HTML table with all column values, each in its own row
                             const tableRows = columnValues.map(value => 
-                                `<tr><td style="background-color: #4ea72e; font-family: 'Times New Roman', serif; font-size: 11pt;">${value}</td></tr>`
+                                `<tr><td style="background-color: #4ea72e; font-family: 'Noto Sans KR', '맑은 고딕', 'Malgun Gothic', sans-serif; font-size: 11pt;">${value}</td></tr>`
                             ).join('');
                             const htmlToCopy = `<table>${tableRows}</table>`;
                             
@@ -1457,7 +1473,7 @@
                         const textToCopy = firstColumnValue + '\t' + englishValue;
                         
                         // Create HTML table with background color and font formatting for Excel
-                        const htmlToCopy = `<table><tr><td style="background-color: #4ea72e; font-family: 'Times New Roman', serif; font-size: 11pt;">${firstColumnValue}</td><td style="background-color: #4ea72e; font-family: 'Times New Roman', serif; font-size: 11pt;">${englishValue}</td></tr></table>`;
+                        const htmlToCopy = `<table><tr><td style="background-color: #4ea72e; font-family: 'Noto Sans KR', '맑은 고딕', 'Malgun Gothic', sans-serif; font-size: 11pt;">${firstColumnValue}</td><td style="background-color: #4ea72e; font-family: 'Noto Sans KR', '맑은 고딕', 'Malgun Gothic', sans-serif; font-size: 11pt;">${englishValue}</td></tr></table>`;
                         
                         if (textToCopy.trim() && textToCopy !== '\t') {
                             // Try to copy with formatting using the older method that supports HTML
@@ -1521,41 +1537,123 @@
                     const cellText = e.target.textContent.trim();
                     
                     if (cellText) {
-                        // Use the Clipboard API if available
-                        if (navigator.clipboard && navigator.clipboard.writeText) {
-                            navigator.clipboard.writeText(cellText).then(() => {
-                                console.log('Copied cell content:', cellText);
-                                
-                                // Visual feedback - briefly highlight the cell
-                                const originalBg = e.target.style.backgroundColor;
-                                e.target.style.backgroundColor = '#e3f2fd';
-                                e.target.style.transition = 'background-color 0.2s';
-                                
-                                setTimeout(() => {
-                                    e.target.style.backgroundColor = originalBg;
-                                    setTimeout(() => {
-                                        e.target.style.transition = '';
-                                    }, 200);
-                                }, 200);
-                                
-                            }).catch(err => {
-                                console.warn('Failed to copy to clipboard:', err);
-                            });
-                        } else {
-                            // Fallback for older browsers
+                        // Check if this cell is in a "correction" or "english" column
+                        const row = e.target.parentElement;
+                        const table = row.closest('table');
+                        const headers = table.querySelectorAll('th');
+                        const cells = row.querySelectorAll('td');
+                        
+                        // Find the column index of the clicked cell
+                        let columnIndex = -1;
+                        for (let i = 0; i < cells.length; i++) {
+                            if (cells[i] === e.target) {
+                                columnIndex = i;
+                                break;
+                            }
+                        }
+                        
+                        let shouldUseGreenFormatting = false;
+                        if (columnIndex >= 0 && columnIndex < headers.length) {
+                            const headerText = headers[columnIndex].textContent.toLowerCase();
+                            shouldUseGreenFormatting = headerText.includes('correction') || headerText.includes('english');
+                        }
+                        
+                        if (shouldUseGreenFormatting) {
+                            // Copy with green background formatting for Excel
+                            const htmlToCopy = `<table><tr><td style="background-color: #4ea72e; font-family: 'Noto Sans KR', '맑은 고딕', 'Malgun Gothic', sans-serif; font-size: 11pt;">${cellText}</td></tr></table>`;
+                            
                             try {
-                                const textArea = document.createElement('textarea');
-                                textArea.value = cellText;
-                                textArea.style.position = 'fixed';
-                                textArea.style.opacity = '0';
-                                document.body.appendChild(textArea);
-                                textArea.select();
-                                document.execCommand('copy');
-                                document.body.removeChild(textArea);
+                                // Create a temporary element with the HTML content
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = htmlToCopy;
+                                tempDiv.style.position = 'fixed';
+                                tempDiv.style.opacity = '0';
+                                tempDiv.style.pointerEvents = 'none';
+                                document.body.appendChild(tempDiv);
                                 
-                                console.log('Copied cell content (fallback):', cellText);
+                                // Select the content
+                                const selection = window.getSelection();
+                                const range = document.createRange();
+                                range.selectNodeContents(tempDiv);
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                                
+                                // Copy with formatting
+                                const success = document.execCommand('copy');
+                                
+                                // Clean up
+                                selection.removeAllRanges();
+                                document.body.removeChild(tempDiv);
+                                
+                                if (success) {
+                                    console.log('Copied cell content with green formatting:', cellText);
+                                    
+                                    // Visual feedback - green highlight
+                                    const originalBg = e.target.style.backgroundColor;
+                                    e.target.style.backgroundColor = '#4ea72e';
+                                    e.target.style.color = 'white';
+                                    e.target.style.transition = 'all 0.2s';
+                                    
+                                    setTimeout(() => {
+                                        e.target.style.backgroundColor = originalBg;
+                                        e.target.style.color = '';
+                                        setTimeout(() => {
+                                            e.target.style.transition = '';
+                                        }, 200);
+                                    }, 400);
+                                } else {
+                                    throw new Error('execCommand failed');
+                                }
+                                
                             } catch (err) {
-                                console.warn('Failed to copy using fallback method:', err);
+                                console.warn('Failed to copy with green formatting, trying plain text:', err);
+                                
+                                // Fallback to plain text copy
+                                if (navigator.clipboard && navigator.clipboard.writeText) {
+                                    navigator.clipboard.writeText(cellText).then(() => {
+                                        console.log('Copied as plain text (fallback):', cellText);
+                                    }).catch(err2 => {
+                                        console.warn('Plain text fallback also failed:', err2);
+                                    });
+                                }
+                            }
+                        } else {
+                            // Use plain text copy for other columns
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                                navigator.clipboard.writeText(cellText).then(() => {
+                                    console.log('Copied cell content:', cellText);
+                                    
+                                    // Visual feedback - briefly highlight the cell
+                                    const originalBg = e.target.style.backgroundColor;
+                                    e.target.style.backgroundColor = '#e3f2fd';
+                                    e.target.style.transition = 'background-color 0.2s';
+                                    
+                                    setTimeout(() => {
+                                        e.target.style.backgroundColor = originalBg;
+                                        setTimeout(() => {
+                                            e.target.style.transition = '';
+                                        }, 200);
+                                    }, 200);
+                                    
+                                }).catch(err => {
+                                    console.warn('Failed to copy to clipboard:', err);
+                                });
+                            } else {
+                                // Fallback for older browsers
+                                try {
+                                    const textArea = document.createElement('textarea');
+                                    textArea.value = cellText;
+                                    textArea.style.position = 'fixed';
+                                    textArea.style.opacity = '0';
+                                    document.body.appendChild(textArea);
+                                    textArea.select();
+                                    document.execCommand('copy');
+                                    document.body.removeChild(textArea);
+                                    
+                                    console.log('Copied cell content (fallback):', cellText);
+                                } catch (err) {
+                                    console.warn('Failed to copy using fallback method:', err);
+                                }
                             }
                         }
                     }
